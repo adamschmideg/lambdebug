@@ -1,0 +1,18 @@
+#!/bin/sh
+
+LIBS="$(find lib/ -follow -mindepth 1 -maxdepth 1 -print0 2> /dev/null | tr \\0 \:)"
+CLASSPATH="$LIBS:src:test"
+if [ -f /usr/bin/cygpath ]; then
+  CLASSPATH=`cygpath -wp "$CLASSPATH"`
+fi
+COMPLETIONS=
+if [ -f $HOME/.clj_completions ]; then
+  COMPLETIONS="$COMPLETIONS -f $HOME/.clj_completions"
+  echo 'homedir completions used'
+fi
+if [ -f .clj_completions ]; then
+  COMPLETIONS="$COMPLETIONS -f .clj_completions"
+  echo 'current dir completions used'
+fi
+rlwrap $COMPLETIONS \
+java -cp $CLASSPATH clojure.main -i clojurerc.clj -r $1 $2 $3 $4

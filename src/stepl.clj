@@ -18,6 +18,14 @@
 (def *level* 0)
 (def *function* nil)
 (def *path* [])
+(def *trace-enabled* nil)
+
+(def *trace* (agent []))
+
+;; utils {{{
+(defn repeat-str [n str]
+  (s/join "" (repeat n str)))
+;; }}}
 
 (defn macro? 
   "Test if a symbol refers to a macro"
@@ -35,12 +43,23 @@
   [path form decorated-form]
   `(binding [*level* (inc *level*)
              *path* (into *path* ~path)]
+     (send *trace* conj
+        {:function *function*
+         :path *path*
+         :level *level*
+         :form '~form})
      (let [global-indent# (s/join "" (repeat *level* "-"))
            function-indent# (s/join "" (repeat (count *path*) "*"))] 
        (println 
           (str global-indent# ">") "\t" *function*
           function-indent# "\t" '~form)
        (let [result# ~decorated-form]
+         (send *trace* conj
+            {:function *function*
+             :path *path*
+             :level *level*
+             :form '~form
+             :result result#})
          (println 
             (str global-indent# "<") "\t" *function*
             function-indent# "\t" "=" result#)
@@ -82,7 +101,7 @@
 (defn trace-vector*
   [path form]
   `(tr ~path ~form
-      ~(into[]
+      ~(into []
           (for [item (indexed form)]
             (trace-form [(first item)] (second item))))))
 
@@ -165,7 +184,7 @@
 
 (defn trace-body [name args body]
   (list args 
-     `(enter-function '~name '~args ~(trace-form 0 body))))
+     `(enter-function '~name '~args ~(trace-form [] body))))
 
 (defn trace-defn [form]
   (let [fn-form (macroexpand-1 form)
@@ -200,3 +219,36 @@
 
 (defn bar [b] (+ (foo 2 b) 3))
 
+(defn format-trace
+  [trace]
+  (let [widths (apply merge-with #(max %1 
+                                    (cond
+                                      (number? %2)
+                                        %2
+                                      (vector? %2)
+                                        (count %2)
+                                      :else
+                                        (count (str %2))))
+                  {:function 0, :path 0, :level 0, :form 0, :result 0}
+                  trace)
+        template (format "%%-%ss %%-%ss %%-%ss %%-%ss %n" 
+                    (inc (:level widths)) (:function widths)
+                    (inc (:path widths)) (max (:form widths) 
+                                        (:result widths)))]
+      (map #(format template 
+              (str (repeat-str (:level %) "=")
+                (if (:result %) "<" ">"))
+              (str (:function %))
+              (str (repeat-str (count (:path %)) "-")
+                (if (:result %) "<" ">"))
+              (if (:result %)
+                (str (:form %) " = " (:result %))
+                (str (:form %))))
+         trace)))
+
+(defmacro debug
+  [expr]
+  `(binding [*trace-enabled* true]
+      (send *trace* (constantly []))
+      (let [result# ~expr]
+        (show-trace @*trace*))))

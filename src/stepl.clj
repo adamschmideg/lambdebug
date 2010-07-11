@@ -36,7 +36,6 @@
   [name args body]
   `(binding [*function* (resolve ~name)
              *path* []]
-      (println "entering" *function*)
       ~body))
 
 (defmacro tr
@@ -44,26 +43,13 @@
   `(binding [*level* (inc *level*)
              *path* (into *path* ~path)]
      (send *trace* conj
-        {:function *function*
-         :path *path*
-         :level *level*
+        {:function *function* :path *path* :level *level*
          :form '~form})
-     (let [global-indent# (s/join "" (repeat *level* "-"))
-           function-indent# (s/join "" (repeat (count *path*) "*"))] 
-       (println 
-          (str global-indent# ">") "\t" *function*
-          function-indent# "\t" '~form)
-       (let [result# ~decorated-form]
-         (send *trace* conj
-            {:function *function*
-             :path *path*
-             :level *level*
-             :form '~form
-             :result result#})
-         (println 
-            (str global-indent# "<") "\t" *function*
-            function-indent# "\t" "=" result#)
-         result#))))
+     (let [result# ~decorated-form]
+       (send *trace* conj
+          {:function *function* :path *path* :level *level*
+           :form '~form :result result#})
+       result#)))
 
 (declare trace-form)
 
@@ -251,4 +237,6 @@
   `(binding [*trace-enabled* true]
       (send *trace* (constantly []))
       (let [result# ~expr]
-        (show-trace @*trace*))))
+        (await-for 1000 *trace*)
+        (doseq [tr# (format-trace @*trace*)] (print tr#))
+        result#)))

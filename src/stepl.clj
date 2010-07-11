@@ -15,22 +15,28 @@
   (:import [java.util.Date]))
 
 (def *level* 0)
+(def *function* nil)
+(def *path* [])
 
 (defn macro? 
   "Test if a symbol refers to a macro"
   [sym]
   (:macro (meta (resolve sym))))
 
-(defn function-called [name args]
-  (println name args))
+(defmacro enter-function
+  [name args body]
+  `(binding [*function* (resolve ~name)
+             *path* []]
+      (println "entering" *function*)
+      ~body))
 
-(defmacro trace
+(defmacro tr
   [form decorated-form]
   `(binding [*level* (inc *level*)]
      (let [indent# (s/join "" (repeat *level* "-"))]
-       (println (str indent# ">") '~form)
+       (println (str indent# ">") *function* "\t" '~form)
        (let [result# ~decorated-form]
-         (println (str indent# "<") result#)
+         (println (str indent# "<") *function* "\t" result#)
          result#))))
 
 (declare trace-form)
@@ -46,27 +52,27 @@
 
 (defn trace-map*
   [form]
-  `(trace ~form
+  `(tr ~form
       ~(zipmap
           (map trace-form (keys form))
           (map trace-form (vals form)))))
 
 (defn trace-set*
   [form]
-  `(trace ~form 
+  `(tr ~form 
       ~(set 
           (for [item form]
              (trace-form item)))))
 
 (defn trace-list*
   [form]
-  `(trace ~form
+  `(tr ~form
       ~(for [item form]
           (trace-form item))))
 
 (defn trace-vector*
   [form]
-  `(trace ~form
+  `(tr ~form
       ~(into[]
           (for [item form]
             (trace-form item)))))
@@ -76,12 +82,12 @@
    free vars and values to be bound.  Only the values and the body is
    traced:
      (let [a b c d] ...) =>
-     (let [a (trace b) c (trace d)] ..."
+     (let [a (tr b) c (trace d)] ..."
   [form]
   (let [func (first form)
         params (fnext form)
         body (nnext form)]
-    `(trace ~form
+    `(tr ~form
         (~func
          ~(trace-pairs* params)
          ~@(for [item body]
@@ -91,22 +97,22 @@
   "Trace a macro whose first arg is a param list, like fn*.  Only the
   body is traced:
     (fn* [a b] (inc a)) =>
-    (fn* [a b] (trace (inc a) ..."
+    (fn* [a b] (tr (inc a) ..."
   [form]
   (let [func (first form)
         params (fnext form)
         body (nnext form)]
-    `(trace ~form
+    `(tr ~form
         (~func
          ~params
          ~@(for [item body]
             (trace-form item))))))
 
 (defn trace-rest*
-  "Keep the head unchanged, trace only the rest.
+  "Keep the head unchanged, tr only the rest.
    Used for most macros"
   [form]
-  `(trace ~form
+  `(tr ~form
      (~(first form)
       ~@(for [item (next form)]
          (trace-form item)))))
@@ -114,7 +120,7 @@
 (defn trace-symbol*
   "Trace symbols, trying to resolve them first, to display a nicer name"
   [form]
-  `(trace ~form ~(or (resolve form) form)))
+  `(tr ~form ~(or (resolve form) form)))
 
 (defn trace-primitive*
   [form]
@@ -148,9 +154,7 @@
 
 (defn trace-body [name args body]
   (list args 
-    `(do
-       (function-called '~name '~args)
-       ~(trace-form body))))
+     `(enter-function '~name '~args ~(trace-form body))))
 
 (defn trace-defn [form]
   (let [fn-form (macroexpand-1 form)

@@ -5,6 +5,12 @@
     [clojure
       test]))
 
+(defn set-seq
+  "Make a seq from a set that keeps its order.
+   Note: (seq coll) wouldn't do that."
+  [coll]
+  (iterator-seq (.iterator coll)))
+
 (with-test
   (defn at
     "Get the nth item of coll.
@@ -22,8 +28,7 @@
               (first entry)
               (second entry)))
       (set? coll)
-         ;; (seq coll) wouldn't keep order
-         (nth (iterator-seq (.iterator coll)) n nil)
+         (nth (set-seq coll) n nil)
       :else
          nil))
   (is (= 42 (at [:a 42 :b] 1)))
@@ -60,7 +65,7 @@
               (edit-at (apply vector (vals coll)) index f))))
       (set? coll)
          ;; (seq coll) wouldn't keep order
-        (let [items (apply vector (iterator-seq (.iterator coll)))]
+        (let [items (apply vector (set-seq coll))]
           (set
             (edit-at items n f)))
       :else

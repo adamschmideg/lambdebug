@@ -104,3 +104,47 @@
             [:a "{:b 42}" :c]))
   (is (= (edit-path [:a :b] [99] str)
             [:a :b])))
+
+(defn step-in
+  "Go to the next trace, even when entering to a lower level"
+  [traces index]
+  (inc index))
+
+(defn step-next
+  "Go to the next trace of the same level"
+  [traces index]
+  (let [traces (drop index traces)
+        level (:level (first traces))]
+    (+ 1 index (count (take-while #(< level (:level %)) 
+                         (next traces))))))
+
+(defn step-prev
+  "Go to the previous trace, sort of inverse of step-next"
+  [traces index])
+
+(defn step-back
+  "Go one step back, the inverse of step-in"
+  [traces index]
+  (dec index))
+
+(defn step-out
+  "Go one level up, returning from the current function"
+  [traces index]
+  (let [traces (drop index traces)
+        level (:level (first traces))]
+    (+ index (count (take-while #(<= level (:level %))
+                      (next traces))))))
+
+(defn gui
+  "Start an interactive gui, read commands, print the result of
+   (dispatcher command) until (exit command) is true."
+  [exit dispatcher & [prompt]]
+  (let [prompt (or prompt ">>> ")]
+    (print prompt)
+    (flush)
+    (loop [command (read-line)]
+      (when-not (exit command)  
+        (println (dispatcher command))
+        (print prompt)
+        (flush)
+        (recur (read-line))))))

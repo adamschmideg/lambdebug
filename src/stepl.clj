@@ -5,14 +5,15 @@
   stepl
   (:require
     [clojure.contrib
-      [str-utils2 :as s]])
+      [str-utils2 :as s]]
+    [stepl
+      [debugger :as dbg]])
   (:use 
     [clojure.test]
     [clojure.contrib.pprint]
     [clojure.contrib.repl-utils]
     [clojure.contrib.duck-streams]
-    [clojure.contrib [seq-utils :only (indexed)]]
-    [stepl debugger])
+    [clojure.contrib [seq-utils :only (indexed)]])
   (:import [java.util.Date]))
 
 (def *level* 0)
@@ -76,7 +77,7 @@
   [path form]
   `(tr ~path ~form 
       ~(set 
-          (for [item (indexed (set-seq form))]
+          (for [item (indexed (dbg/set-seq form))]
              (trace-form [(first item)] (second item))))))
 
 (defn trace-list*
@@ -171,7 +172,7 @@
 
 (defn trace-body [name args body]
   (list args 
-     `(enter-function '~name '~args ~(trace-form [] body))))
+     `(enter-function '~name '~args ~(trace-form [1] body))))
 
 (defn trace-defn [form]
   (let [fn-form (macroexpand-1 form)
@@ -192,7 +193,8 @@
             assoc 
             (resolve (second form))
             (nnext form))
-          (let [new-fn (eval (trace-defn form))]
+          (let [new-form (trace-defn form)
+                new-fn (eval new-form)]
             (intern ns (with-meta name md) new-fn)))))))
 
 (defn trace-ns [ns-pattern]
@@ -237,11 +239,14 @@
                 (str (:form %))))
          trace)))
 
-(defmacro debug
+(defn debug
   [expr]
-  `(binding [*trace-enabled* true]
-      (send *traces* (constantly []))
-      (let [result# ~expr]
-        (await-for 1000 *traces*)
-        (doseq [tr# (format-trace @*traces*)] (print tr#))
-        result#)))
+  (binding [*trace-enabled* true]
+     (send *traces* (constantly []))
+     (let [result (eval expr)]
+       (await-for 1000 *traces*)
+       (doseq [tr (format-trace @*traces*)] (print tr))
+       ;; call debugger
+       (dbg/gui #(= "q" %) 
+         (dbg/make-dispatcher @*traces* @*function-forms*))
+       result)))

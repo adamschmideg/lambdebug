@@ -8,10 +8,9 @@
     [clojure
       test]
     [clojure.contrib
-      [pprint :only [pprint]]]
-    [stepl]))
+      [pprint :only [pprint]]]))
 
-(def *trace-index* (agent nil))
+(def *trace-index* (agent 0))
 
 (defn set-seq
   "Make a seq from a set that keeps its order.
@@ -165,23 +164,30 @@
     (+ index (count (take-while #(<= level (:level %))
                       (next traces))))))
 
+(defn print-usage
+  [& _]
+  (println "Help: choose
+    step (i)n, (n)ext, (b)ack, (o)ut"))
+    
+
 (def *COMMANDS*
   {"i" step-in
    "n" step-next
    "b" step-back
    "o" step-out
-   "h" #(do (println "Help:")
-           %)})
+   "h" print-usage})
 
-(defn dispatch-command
+(defn make-dispatcher
   "Call the appropriate stepping functions based on command,
   store trace index, and print new trace"
-  [command]
-  (let [func (*COMMANDS* command)
-        index (func @*trace-index*)]
-    (send *trace-index* (constantly index))
-    (print-trace @*traces* index @*function-forms*)
-    (await-for 1000 *trace-index*)))
+  [traces function-forms]
+  (fn [command]
+    (if-let [func (*COMMANDS* command)]
+      (let [index (func traces @*trace-index*)]
+        (send *trace-index* (constantly index))
+        (print-trace traces index function-forms)
+        (await-for 1000 *trace-index*))
+      (print-usage))))
 
 (defn gui
   "Start an interactive gui, read commands, print the result of

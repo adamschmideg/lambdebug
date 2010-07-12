@@ -3,12 +3,11 @@
   stepl.debugger
   (:require
     [clojure.contrib
-      [str-utils2 :as string]])
+      [str-utils2 :as string]
+      [pprint :as pp]])
   (:use
     [clojure
-      test]
-    [clojure.contrib
-      [pprint :only [pprint]]]))
+      test]))
 
 (def *trace-index* (agent 0))
 
@@ -119,7 +118,8 @@
     (str left-decor
       (string/chomp
         (with-out-str
-          (pprint form)))
+          (pp/with-pprint-dispatch pp/*code-dispatch*
+            (pp/pprint form))))
       right-decor)))
 
 (defn print-trace
@@ -129,10 +129,12 @@
   (let [trace (nth traces index)
         func-form(functions (trace :function))
         form (edit-path func-form (trace :path) decorate)]
-      (pprint form)
+
+      (pp/with-pprint-dispatch pp/*code-dispatch*
+        (pp/pprint form))
       (when-let [result (trace :result)]
         (println "Result:")
-        (pprint result))))
+        (pp/pprint result))))
 
 (defn step-in
   "Go to the next trace, even when entering to a lower level"

@@ -151,7 +151,10 @@
 
 (defn step-prev
   "Go to the previous trace, sort of inverse of step-next"
-  [traces index])
+  [traces index]
+  (do
+    (println "Sorry, not implemented yet")
+    index))
 
 (defn step-back
   "Go one step back, the inverse of step-in"

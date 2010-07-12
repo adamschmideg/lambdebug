@@ -107,7 +107,7 @@
         (~func
          ~(trace-pairs* [1] params)
          ~@(for [item (indexed body)]
-            (trace-form [2 (first item)] (second item)))))))
+            (trace-form [2] (second item)))))))
 
 (defn trace-single-binding*
   "Trace a macro whose first arg is a param list, like fn*.  Only the

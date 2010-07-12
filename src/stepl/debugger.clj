@@ -1,9 +1,17 @@
 (ns #^{:doc "Step and debug in clojure REPL"
        :author "Adam Schmideg"}
   stepl.debugger
+  (:require
+    [clojure.contrib
+      [str-utils2 :as string]])
   (:use
     [clojure
-      test]))
+      test]
+    [clojure.contrib
+      [pprint :only [pprint]]]
+    [stepl]))
+
+(def *trace-index* (agent nil))
 
 (defn set-seq
   "Make a seq from a set that keeps its order.
@@ -105,6 +113,28 @@
   (is (= (edit-path [:a :b] [99] str)
             [:a :b])))
 
+(defn decorate
+  "Pretty print a form and surround it with decorations"
+  ([form] (decorate form ">>>" "<<<"))
+  ([form left-decor right-decor]
+    (str left-decor
+      (string/chomp
+        (with-out-str
+          (pprint form)))
+      right-decor)))
+
+(defn print-trace
+  "Print the input form of a trace and its result if it has one.
+  - functions: a map of function forms"
+  [traces index functions]
+  (let [trace (nth traces index)
+        func-form(functions (trace :function))
+        form (edit-path func-form (trace :path) decorate)]
+      (pprint form)
+      (when-let [result (trace :result)]
+        (println "Result:")
+        (pprint result))))
+
 (defn step-in
   "Go to the next trace, even when entering to a lower level"
   [traces index]
@@ -135,6 +165,24 @@
     (+ index (count (take-while #(<= level (:level %))
                       (next traces))))))
 
+(def *COMMANDS*
+  {"i" step-in
+   "n" step-next
+   "b" step-back
+   "o" step-out
+   "h" #(do (println "Help:")
+           %)})
+
+(defn dispatch-command
+  "Call the appropriate stepping functions based on command,
+  store trace index, and print new trace"
+  [command]
+  (let [func (*COMMANDS* command)
+        index (func @*trace-index*)]
+    (send *trace-index* (constantly index))
+    (print-trace @*traces* index @*function-forms*)
+    (await-for 1000 *trace-index*)))
+
 (defn gui
   "Start an interactive gui, read commands, print the result of
    (dispatcher command) until (exit command) is true."
@@ -144,7 +192,7 @@
     (flush)
     (loop [command (read-line)]
       (when-not (exit command)  
-        (println (dispatcher command))
+        (dispatcher command)
         (print prompt)
         (flush)
         (recur (read-line))))))

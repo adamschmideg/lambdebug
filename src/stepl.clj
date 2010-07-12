@@ -20,7 +20,8 @@
 (def *path* [])
 (def *trace-enabled* nil)
 
-(def *trace* (agent []))
+(def *traces* (agent nil))
+(def *function-forms* (agent nil))
 
 ;; utils {{{
 (defn repeat-str [n str]
@@ -42,11 +43,11 @@
   [path form decorated-form]
   `(binding [*level* (inc *level*)
              *path* (into *path* ~path)]
-     (send *trace* conj
+     (send *traces* conj
         {:function *function* :path *path* :level *level*
          :form '~form})
      (let [result# ~decorated-form]
-       (send *trace* conj
+       (send *traces* conj
           {:function *function* :path *path* :level *level*
            :form '~form :result result#})
        result#)))
@@ -186,7 +187,11 @@
         ns (:ns md)]
     (when-let [source (get-source func)]
       (let [form (read-string source)]
-        (if (#{'defn 'defn-} (first form))
+        (when (#{'defn 'defn-} (first form))
+          (send *function-forms* 
+            assoc 
+            (resolve (second form))
+            (nnext form))
           (let [new-fn (eval (trace-defn form))]
             (intern ns (with-meta name md) new-fn)))))))
 
@@ -196,7 +201,7 @@
     (doseq [ns namespaces]
       (do 
         (doseq [func (keys (ns-publics (symbol ns)))]
-          (prn ">" func)
+          (println "Tracing" func)
           (trace-func func))))))
 
 (defn foo [a & [b]]
@@ -235,8 +240,8 @@
 (defmacro debug
   [expr]
   `(binding [*trace-enabled* true]
-      (send *trace* (constantly []))
+      (send *traces* (constantly []))
       (let [result# ~expr]
-        (await-for 1000 *trace*)
-        (doseq [tr# (format-trace @*trace*)] (print tr#))
+        (await-for 1000 *traces*)
+        (doseq [tr# (format-trace @*traces*)] (print tr#))
         result#)))

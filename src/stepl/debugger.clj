@@ -15,7 +15,7 @@
 (def *left-marker* (str
   \u001b "[1m"
   ;\u001b "[7m"
-  \u001b "[33m
+  \u001b "[33m"
   "<<< "))
 
 (def *right-marker* (str " >>>" \u001b "[0m"))

@@ -11,6 +11,15 @@
 
 (def *trace-index* (agent 0))
 
+; bright inverse yellow
+(def *left-marker* (str
+  \u001b "[1m"
+  ;\u001b "[7m"
+  \u001b "[33m
+  "<<< "))
+
+(def *right-marker* (str " >>>" \u001b "[0m"))
+
 (defn set-seq
   "Make a seq from a set that keeps its order.
    Note: (seq coll) wouldn't do that."
@@ -113,14 +122,13 @@
 
 (defn decorate
   "Pretty print a form and surround it with decorations"
-  ([form] (decorate form ">>>" "<<<"))
-  ([form left-decor right-decor]
-    (str left-decor
-      (string/chomp
-        (with-out-str
-          (pp/with-pprint-dispatch pp/*code-dispatch*
-            (pp/pprint form))))
-      right-decor)))
+  [form]
+  (str *left-marker*
+    (string/chomp
+      (with-out-str
+        (pp/with-pprint-dispatch pp/*code-dispatch*
+          (pp/pprint form))))
+    *right-marker*))
 
 (defn print-trace
   "Print the input form of a trace and its result if it has one.
@@ -174,7 +182,6 @@
   (println "Help: choose
     step (i)n, (n)ext, (b)ack, (o)ut"))
     
-
 (def *COMMANDS*
   {"i" step-in
    "n" step-next
@@ -189,9 +196,10 @@
   (fn [command]
     (if-let [func (*COMMANDS* command)]
       (let [index (func traces @*trace-index*)]
-        (send *trace-index* (constantly index))
-        (print-trace traces index function-forms)
-        (await-for 1000 *trace-index*))
+        (when (contains? traces index)
+          (send *trace-index* (constantly index))
+          (print-trace traces index function-forms)
+          (await-for 1000 *trace-index*)))
       (print-usage))))
 
 (defn gui
@@ -202,7 +210,7 @@
     (print prompt)
     (flush)
     (loop [command (read-line)]
-      (when-not (exit command)  
+      (when-not (exit command)
         (dispatcher command)
         (print prompt)
         (flush)

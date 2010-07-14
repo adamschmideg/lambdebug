@@ -25,6 +25,13 @@
 (def *function-forms* (agent nil))
 
 ;; utils {{{
+(defmacro either
+  "Return either [nil result] in normal case,
+  or [exception nil] if an an exception was thrown."
+  [expr]
+  `(try [nil ~expr] 
+    (catch Throwable t# [t# nil])))
+
 (defn repeat-str [n str]
   (s/join "" (repeat n str)))
 ;; }}}
@@ -47,11 +54,13 @@
      (send *traces* conj
         {:function *function* :path *path* :level *level*
          :form '~form})
-     (let [result# ~decorated-form]
+     (let [[exception# result#] (either ~decorated-form)]
        (send *traces* conj
           {:function *function* :path *path* :level *level*
-           :form '~form :result result#})
-       result#)))
+           :form '~form :result (or result# exception#)})
+       (if result#
+         result#
+         (throw exception#)))))
 
 (declare trace-form)
 
@@ -243,10 +252,10 @@
   [expr]
   (binding [*trace-enabled* true]
      (send *traces* (constantly []))
-     (let [result (eval expr)]
+     (let [[exception result] (either (eval expr))]
        (await-for 1000 *traces*)
        (doseq [tr (format-trace @*traces*)] (print tr))
        ;; call debugger
        (dbg/gui #(= "q" %) 
          (dbg/make-dispatcher @*traces* @*function-forms*))
-       result)))
+       (or result exception))))

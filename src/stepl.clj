@@ -215,12 +215,6 @@
           (println "Tracing" func)
           (trace-func func))))))
 
-(defn foo [a & [b]]
-  (let [x (inc a)]
-    (* b (inc x))))
-
-(defn bar [b] (+ (foo 2 b) 3))
-
 (defn format-trace
   [trace]
   (let [widths (apply merge-with #(max %1 

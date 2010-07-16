@@ -149,7 +149,7 @@
 
 (defn trace-primitive*
   [path form]
-  form)
+  `(tr ~path ~form ~form))
 
 (defn trace-form 
   ([form] (trace-form nil form))

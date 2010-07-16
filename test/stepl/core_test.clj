@@ -28,15 +28,57 @@
               (:form %))
     traces))
 
-(defn test-trace
-  "Check if tracing form results in the simplified-traces"
-  [form simplified-traces]
+(defn make-steps
+  "Trace form, evaluate it, and return the steps taken"
+  [form]
   (do
      (send *traces* (constantly []))
      (eval (trace-form form))
      (await-for 1000 *traces*)
-     (is (= (simplify-traces @*traces*)
-            simplified-traces))))
+     @*traces*))
 
-(defn div [x y] (/ x y))
+(defn check-trace-form
+  "Check if tracing form results in the expected steps"
+  [form expected]
+  (let [got (simplify-traces (make-steps form))]
+     (is (= got expected))))
 
+(deftest trace-form-test
+  (testing "simple functions"
+    (check-trace-form
+      '(* (+ 1 2) (inc 3))
+      [
+        :>> '(* (+ 1 2) (inc 3))
+        :>> '*
+        :<< '*
+        :>> '(+ 1 2)
+        :>> '+
+        :<< '+
+        :>> 1
+        :<< 1
+        :>> 2
+        :<< 2
+        :<< '(+ 1 2)
+        :>> '(inc 3)
+        :>> 'inc
+        :<< 'inc
+        :>> 3
+        :<< 3
+        :<< '(inc 3)
+        :<< '(* (+ 1 2) (inc 3))]))
+  (testing "for (list comprehension)"
+    (check-trace-form
+      '(for [i (range 2)] 42)
+      [
+        :>> '(for [i (range 2)] 42)
+        :>> '(range 2)
+        :>> 'range
+        :<< 'range
+        :>> 2
+        :<< 2
+        :<< '(range 2)
+        :<< '(for [i (range 2)] 42)
+        :>> 42
+        :<< 42
+        :>> 42
+        :<< 42])))

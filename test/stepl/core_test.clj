@@ -3,9 +3,10 @@
   (:use
     [clojure.test]
     [clojure.contrib
-      [seq-utils :only (flatten)]]
+      [seq-utils :only (flatten indexed)]]
     [stepl]))
 
+;; generic utils
 (with-test
   (defn flip
     "Flip a sequence of map with roughly the same keys to a map of sequences"
@@ -28,6 +29,26 @@
               (:form %))
     traces))
 
+(with-test
+  (defn diff?
+    "Return the first different values and the path to them,
+    or nil if the collections equal"
+    ([coll1 coll2] (diff? coll1 coll2 []))
+    ([coll1 coll2 path]
+      (if (and (coll? coll1) (coll? coll2))
+        (some
+          #(let [[idx [c1 c2]] %]
+            (diff? c1 c2 (conj path idx)))
+          (indexed (partition 2 (interleave coll1 coll2))))
+        (if (= coll1 coll2)
+          nil
+          [coll1 coll2 path]))))
+  (are [c1 c2 diff] (is (= (diff? c1 c2) diff))
+    [1] [2]  [1 2 [0]]
+    [1] [1 9]  [nil 9 [1]]
+    ))
+
+;; helpers for testing trace-related stuff
 (defn make-steps
   "Trace form, evaluate it, and return the steps taken"
   [form]

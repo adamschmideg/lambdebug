@@ -39,7 +39,9 @@
 (defn macro? 
   "Test if a symbol refers to a macro"
   [sym]
-  (:macro (meta (resolve sym))))
+  (and 
+    (symbol? sym)
+    (:macro (meta (resolve sym)))))
 
 (defmacro enter-function
   [name args body]
@@ -58,9 +60,9 @@
        (send *traces* conj
           {:function *function* :path *path* :level *level*
            :form '~form :result (or result# exception#)})
-       (if result#
-         result#
-         (throw exception#)))))
+       (if exception#
+         (throw exception#)
+         result#))))
 
 (declare trace-form)
 
@@ -163,7 +165,7 @@
            (condp contains? func
               #{'let 'for 'doseq 'binding}
                 (trace-multi-binding* path form)
-              #{'fn* path}
+              #{'fn*}
                 (trace-single-binding* path form)
               ;; default
                 (trace-rest* path form))

@@ -25,7 +25,7 @@
    and :<< for leaving"
   [traces]
   (mapcat #(vector
-              (if (:result %) :<< :>>)
+              (if (find % :result) :<< :>>)
               (:form %))
     traces))
 
@@ -108,8 +108,31 @@
         :>> 2
         :<< 2
         :<< '(range 2)
-        :<< '(for [i (range 2)] 42)
-        :>> 42
-        :<< 42
-        :>> 42
-        :<< 42])))
+        :<< '(for [i (range 2)] 42)]))
+  (testing "let form"
+    (check-trace-form
+      '(let [a 1 b 2] (+ a b))
+      [
+        :>> '(let [a 1 b 2] (+ a b))
+        :>> 1
+        :<< 1
+        :>> 2
+        :<< 2
+        :>> '(+ a b)
+        :>> '+
+        :<< '+
+        :>> 'a
+        :<< 'a
+        :>> 'b
+        :<< 'b
+        :<< '(+ a b)
+        :<< '(let [a 1 b 2] (+ a b))]))
+  (testing "logical"
+    (check-trace-form
+      '(and nil 2)
+      [
+        :>> '(and nil 2)
+        :>> nil
+        :<< nil
+        :<< '(and nil 2)])))
+

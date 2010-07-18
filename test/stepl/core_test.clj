@@ -20,15 +20,6 @@
   (is (= {:a [1 nil], :b [2 9]}
          (flip [{:a 1 :b 2} {:b 9}]))))
 
-(defn simplify-traces
-  "Show only traced form and its direction, :>> for entering,
-   and :<< for leaving"
-  [traces]
-  (mapcat #(vector
-              (if (find % :result) :<< :>>)
-              (:form %))
-    traces))
-
 (with-test
   (defn first-diff
     "Return the first different values and the path to them,
@@ -57,6 +48,23 @@
     [1 [2]], [1 [3]] :>> [2 3 [1 0]]
     [1 [2]], [1 [2 3]] :>> [nil 3 [1 1]]))
 
+(with-test
+  (defn column-display
+    "Convert items to strings right-padded with spaces so they are all of
+    equal width"
+    [coll]
+    (let [strings (map str coll)
+          width (apply max (map count strings))
+          fmt (format "%%-%ss" width)]
+      (map #(format fmt %) strings)))
+  (is (= ["1  " "abc" "[] "]
+        (column-display [1 "abc" []]))))
+
+(defn maps-to-lol
+  ([maps] (maps-to-lol maps (keys (first maps))))
+  ([maps ks]
+    (map #(map % ks) maps)))
+
 ;; helpers for testing trace-related stuff
 (defn make-steps
   "Trace form, evaluate it, and return the steps taken"
@@ -68,10 +76,22 @@
      (await-for 1000 *traces*)
      @*traces*))
 
+(defn nice-steps
+  [form]
+  (doseq [line (maps-to-lol
+                (remove #(find % :result) 
+                  (make-steps form))
+                [:path :form])]
+    (println line)))
+
 (defn check-trace-form
   "Check if tracing form results in the expected steps"
   [form expected]
-  (let [got (simplify-traces (make-steps form))]
+  (let [got (apply concat
+              (maps-to-lol
+                (remove #(find % :result) 
+                  (make-steps form))
+                [:path :form]))]
     (is (not (first-diff got expected)))))
 
 (deftest trace-form-test
@@ -79,60 +99,37 @@
     (check-trace-form
       '(* (+ 1 2) (inc 3))
       [
-        :>> '(* (+ 1 2) (inc 3))
-        :>> '*
-        :<< '*
-        :>> '(+ 1 2)
-        :>> '+
-        :<< '+
-        :>> 1
-        :<< 1
-        :>> 2
-        :<< 2
-        :<< '(+ 1 2)
-        :>> '(inc 3)
-        :>> 'inc
-        :<< 'inc
-        :>> 3
-        :<< 3
-        :<< '(inc 3)
-        :<< '(* (+ 1 2) (inc 3))]))
+        [] '(* (+ 1 2) (inc 3))
+        [0] '*
+        [1] '(+ 1 2)
+        [1 0] '+
+        [1 1] 1
+        [1 2] 2
+        [2] '(inc 3)
+        [2 0] 'inc
+        [2 1] 3]))
   (testing "for (list comprehension)"
     (check-trace-form
       '(for [i (range 2)] 42)
       [
-        :>> '(for [i (range 2)] 42)
-        :>> '(range 2)
-        :>> 'range
-        :<< 'range
-        :>> 2
-        :<< 2
-        :<< '(range 2)
-        :<< '(for [i (range 2)] 42)]))
+        [] '(for [i (range 2)] 42)
+        [1 1] '(range 2)
+        [1 1 0] 'range
+        [1 1 1] 2]))
   (testing "let form"
     (check-trace-form
-      '(let [a 1 b 2] (+ a b))
+      '(let [a 5 b 9] (+ a b))
       [
-        :>> '(let [a 1 b 2] (+ a b))
-        :>> 1
-        :<< 1
-        :>> 2
-        :<< 2
-        :>> '(+ a b)
-        :>> '+
-        :<< '+
-        :>> 'a
-        :<< 'a
-        :>> 'b
-        :<< 'b
-        :<< '(+ a b)
-        :<< '(let [a 1 b 2] (+ a b))]))
+        [] '(let [a 5 b 9] (+ a b))
+        [1 1] 5
+        [1 3] 9
+        [2] '(+ a b)
+        [2 0] '+
+        [2 1] 'a
+        [2 2] 'b]))
   (testing "logical"
     (check-trace-form
       '(and nil 2)
       [
-        :>> '(and nil 2)
-        :>> nil
-        :<< nil
-        :<< '(and nil 2)])))
-
+        [] '(and nil 2)
+        [1] nil])))

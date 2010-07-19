@@ -144,6 +144,16 @@
       ~@(for [item (indexed (next form))]
          (trace-form [(inc (first item))] (second item))))))
 
+(defn trace-fn
+  "Trace fn in both forms, 
+    (fn [x] ...), or (fn ([x] ..) ([x y] ..))"
+  [path form]
+  (if (vector? (fnext form))
+    (trace-single-binding* path form)
+    `(fn
+      ~@(for [body (indexed (next form))]
+          (trace-rest* [(inc (first item))] (second item))))))
+
 (defn trace-symbol*
   "Trace symbols, trying to resolve them first, to display a nicer name"
   [path form]
@@ -167,6 +177,8 @@
                 (trace-multi-binding* path form)
               #{'fn*}
                 (trace-single-binding* path form)
+              #{'fn}
+                (trace-fn path form)
               ;; default
                 (trace-rest* path form))
            (trace-list* path form)))

@@ -7,7 +7,9 @@
       [pprint :as pp]])
   (:use
     [clojure
-      test]))
+      test]
+    [stepl
+      [utils :only [set-seq]]]))
 
 (def *trace-index* (agent 0))
 
@@ -20,11 +22,6 @@
 
 (def *right-marker* (str " >>>" \u001b "[0m"))
 
-(defn set-seq
-  "Make a seq from a set that keeps its order.
-   Note: (seq coll) wouldn't do that."
-  [coll]
-  (iterator-seq (.iterator coll)))
 
 (with-test
   (defn at

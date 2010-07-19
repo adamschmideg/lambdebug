@@ -4,7 +4,7 @@
     [clojure.test]
     [clojure.contrib
       [seq-utils :only (flatten indexed)]]
-    [stepl]))
+    [stepl.core]))
 
 ;; generic utils
 (with-test

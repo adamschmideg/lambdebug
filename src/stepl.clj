@@ -29,7 +29,7 @@
           (send *function-forms* 
             assoc 
             (resolve (second form))
-            (nnext form))
+            (nth (macroexpand-1 form) 2))
           (let [new-form (trace-defn form)
                 new-fn (eval new-form)]
             (intern ns (with-meta name md) new-fn)))))))
@@ -59,13 +59,14 @@
                     (inc (:level widths)) (:function widths)
                     (inc (:path widths)) (max (:form widths) 
                                         (:result widths)))]
+      (println "template" template)
       (map #(format template 
               (str (repeat-str (:level %) "=")
                 (if (:result %) "<" ">"))
               (str (:function %))
               (str (repeat-str (count (:path %)) "-")
                 (if (:result %) "<" ">"))
-              (if (:result %)
+              (if (find % :result)
                 (str (:form %) " = " (:result %))
                 (str (:form %))))
          trace)))

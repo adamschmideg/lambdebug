@@ -61,9 +61,6 @@
         (if (contains? coll n)
           (assoc coll n (f (nth coll n)))
           coll)
-      (list? coll)
-        (seq
-          (edit-at (apply vector coll) n f))
       (map? coll)
         (let [index (int (/ n 2))
               ks (keys coll)
@@ -80,6 +77,9 @@
         (let [items (apply vector (set-seq coll))]
           (set
             (edit-at items n f)))
+      (coll? coll)
+        (seq
+          (edit-at (apply vector coll) n f))
       :else
         coll))
   (are
@@ -132,9 +132,11 @@
   - functions: a map of function forms"
   [traces index functions]
   (let [trace (nth traces index)
-        func-form(functions (trace :function))
+        func-form (functions (trace :function))
         form (edit-path func-form (trace :path) decorate)]
 
+      (println (trace :function))
+      (println (trace :form) "===" (trace :path) "<<<" func-form)
       (pp/with-pprint-dispatch pp/*code-dispatch*
         (pp/pprint form))
       (when-let [result (trace :result)]

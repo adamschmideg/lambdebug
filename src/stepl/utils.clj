@@ -17,3 +17,7 @@
    Note: (seq coll) wouldn't do that."
   [coll]
   (iterator-seq (.iterator coll)))
+
+(defmacro ??
+  [exp]
+  `(println "debug:" '~exp ~exp))

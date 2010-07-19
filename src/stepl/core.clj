@@ -11,7 +11,7 @@
     [clojure.contrib.duck-streams]
     [clojure.contrib [seq-utils :only (indexed)]]
     [stepl
-      [utils :only [repeat-str set-seq either]]])
+      [utils :only [repeat-str set-seq either ??]]])
   (:import [java.util.Date]))
 
 (def *level* 0)
@@ -33,10 +33,10 @@
     (:macro (meta (resolve sym)))))
 
 (defmacro enter-function
-  [name args body]
+  [name form]
   `(binding [*function* (resolve ~name)
              *path* []]
-      ~body))
+      ~form))
 
 (defmacro tr
   [path form decorated-form]
@@ -133,15 +133,29 @@
       ~@(for [item (indexed (next form))]
          (trace-form [(inc (first item))] (second item))))))
 
+(defn trace-only-rest*
+  "Same as trace-rest* but don't tr the whole form, either"
+  [path form]
+  `(~(first form)
+      ~@(for [item (indexed (next form))]
+         (trace-form (conj path (inc (first item))) (second item)))))
+
 (defn trace-fn
   "Trace fn in both forms, 
     (fn [x] ...), or (fn ([x] ..) ([x y] ..))"
-  [path form]
-  (if (vector? (fnext form))
-    (trace-single-binding* path form)
-    `(fn
-      ~@(for [body (indexed (next form))]
-          (trace-rest* [(inc (first body))] (second body))))))
+  ([path form] (trace-fn path form nil))
+  ([path form name]
+    (if (vector? (fnext form))
+      (trace-single-binding* path form)
+      (let [bodies (map (fn [body idx]
+                          (let [traced (trace-only-rest* (conj path idx) body)]
+                             `(~(first traced)
+                               (enter-function '~name 
+                                 (do ~@(next traced))))))
+                      (next form)
+                      (iterate inc 1))]
+      `(tr ~path ~form
+        (fn ~@bodies))))))
 
 (defn trace-symbol*
   "Trace symbols, trying to resolve them first, to display a nicer name"
@@ -182,15 +196,7 @@
     :else
       (trace-primitive* path form))))
 
-(defn trace-body [name args body]
-  (list args 
-     `(enter-function '~name '~args ~(trace-form [1] body))))
-
 (defn trace-defn [form]
-  (let [fn-form (macroexpand-1 form)
-        [_ name [_ & bodies]] fn-form
-        bodies (map #(let [[arg body] %]
-                        (trace-body name arg body))
-                  bodies)]
-    `(fn ~@bodies)))
+  (let [[_ name fn-form] (macroexpand-1 form)]
+    (trace-fn [] fn-form name)))
 

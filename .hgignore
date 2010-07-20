@@ -3,3 +3,5 @@ lib/*
 clojurerc.clj
 classes/*
 stepl*.jar
+pom.xml
+*.swp

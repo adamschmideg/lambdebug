@@ -1,4 +1,4 @@
-(defproject stepl "0.3"
+(defproject stepl "0.3.1"
   :description "Step, trace, and debug in clojure repl"
   :url "https://stepl.taskberry.googlecode.com/hg"
   :dependencies [[org.clojure/clojure "1.1.0"]

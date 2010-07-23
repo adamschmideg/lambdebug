@@ -11,7 +11,7 @@
     [clojure.contrib.duck-streams]
     [clojure.contrib [seq-utils :only (indexed)]]
     [stepl
-      [utils :only [repeat-str set-seq either ??]]])
+      utils])
   (:import [java.util.Date]))
 
 (def *level* 0)
@@ -21,16 +21,6 @@
 
 (def *traces* (agent nil))
 (def *function-forms* (agent nil))
-
-;; utils {{{
-;; }}}
-
-(defn macro? 
-  "Test if a symbol refers to a macro"
-  [sym]
-  (and 
-    (symbol? sym)
-    (:macro (meta (resolve sym)))))
 
 (defmacro enter-function
   [name ns form]

@@ -33,8 +33,8 @@
     (:macro (meta (resolve sym)))))
 
 (defmacro enter-function
-  [name form]
-  `(binding [*function* (resolve ~name)
+  [name ns form]
+  `(binding [*function* (ns-resolve ~ns ~name)
              *path* []]
       ~form))
 
@@ -57,41 +57,41 @@
 
 (defn trace-pairs*
   "Decorate even elements of a vector with trace"
-  [path pairs]
+  [path pairs ns]
   (into []
     (map #(if (even? (first %))
             (fnext %)
-            (trace-form (conj path (first %)) (fnext %)))
+            (trace-form (conj path (first %)) (fnext %) ns))
        (indexed pairs))))
 
 (defn trace-map*
-  [path form]
+  [path form ns]
   `(tr ~path ~form
       ~(zipmap
-          (map (fn [[idx frm]] (trace-form [(* 2 idx)] frm))
+          (map (fn [[idx frm]] (trace-form [(* 2 idx)] frm ns))
             (indexed (keys form)))
-          (map (fn [[idx frm]] (trace-form [(inc (* 2 idx))] frm))
+          (map (fn [[idx frm]] (trace-form [(inc (* 2 idx))] frm ns))
             (indexed (vals form))))))
 
 (defn trace-set*
-  [path form]
+  [path form ns]
   `(tr ~path ~form 
       ~(set 
           (for [item (indexed (set-seq form))]
-             (trace-form [(first item)] (second item))))))
+             (trace-form [(first item)] (second item) ns)))))
 
 (defn trace-list*
-  [path form]
+  [path form ns]
   `(tr ~path ~form
       ~(for [item (indexed form)]
-          (trace-form [(first item)] (second item)))))
+          (trace-form [(first item)] (second item) ns))))
 
 (defn trace-vector*
-  [path form]
+  [path form ns]
   `(tr ~path ~form
       ~(into []
           (for [item (indexed form)]
-            (trace-form [(first item)] (second item))))))
+            (trace-form [(first item)] (second item) ns)))))
 
 (defn trace-multi-binding*
   "Trace a macro whose first arg is a vector of
@@ -99,22 +99,22 @@
    traced:
      (let [a b c d] ...) =>
      (let [a (tr b) c (trace d)] ..."
-  [path form]
+  [path form ns]
   (let [func (first form)
         params (fnext form)
         body (nnext form)]
     `(tr ~path ~form
         (~func
-         ~(trace-pairs* [1] params)
+         ~(trace-pairs* [1] params ns)
          ~@(for [item (indexed body)]
-            (trace-form [2] (second item)))))))
+            (trace-form [2] (second item) ns))))))
 
 (defn trace-single-binding*
   "Trace a macro whose first arg is a param list, like fn*.  Only the
   body is traced:
     (fn* [a b] (inc a)) =>
     (fn* [a b] (tr (inc a) ..."
-  [path form]
+  [path form ns]
   (let [func (first form)
         params (fnext form)
         body (nnext form)]
@@ -122,35 +122,37 @@
         (~func
          ~params
          ~@(for [item (indexed body)]
-            (trace-form [2 (first item)] (second item)))))))
+            (trace-form [2 (first item)] (second item) ns))))))
 
 (defn trace-rest*
   "Keep the head unchanged, tr only the rest.
    Used for most macros"
-  [path form]
+  [path form ns]
   `(tr ~path ~form
      (~(first form)
       ~@(for [item (indexed (next form))]
-         (trace-form [(inc (first item))] (second item))))))
+         (trace-form [(inc (first item))] (second item) ns)))))
 
 (defn trace-only-rest*
   "Same as trace-rest* but don't tr the whole form, either"
-  [path form]
+  [path form ns]
   `(~(first form)
       ~@(for [item (indexed (next form))]
-         (trace-form (conj path (inc (first item))) (second item)))))
+         (trace-form 
+           (conj path (inc (first item))) (second item) ns))))
 
 (defn trace-fn
   "Trace fn in both forms, 
     (fn [x] ...), or (fn ([x] ..) ([x y] ..))"
-  ([path form] (trace-fn path form nil))
-  ([path form name]
+  ([path form ns] (trace-fn path form nil))
+  ([path form name ns]
     (if (vector? (fnext form))
-      (trace-single-binding* path form)
+      (trace-single-binding* path form ns)
       (let [bodies (map (fn [body idx]
-                          (let [traced (trace-only-rest* (conj path idx) body)]
+                          (let [traced (trace-only-rest*
+                                         (conj path idx) body ns)]
                              `(~(first traced)
-                               (enter-function '~name 
+                               (enter-function '~name '~ns
                                  (do ~@(next traced))))))
                       (next form)
                       (iterate inc 1))]
@@ -159,16 +161,16 @@
 
 (defn trace-symbol*
   "Trace symbols, trying to resolve them first, to display a nicer name"
-  [path form]
-  `(tr ~path ~form ~(or (resolve form) form)))
+  [path form ns]
+  `(tr ~path ~form ~(or (ns-resolve ns form) form)))
 
 (defn trace-primitive*
-  [path form]
+  [path form ns]
   `(tr ~path ~form ~form))
 
 (defn trace-form 
-  ([form] (trace-form nil form))
-  ([path form]
+  ([form ns] (trace-form nil form ns))
+  ([path form ns]
   (cond
     (seq? form)
       (let [func (first form)]
@@ -177,26 +179,26 @@
               (macro? func))
            (condp contains? func
               #{'let 'for 'doseq 'binding}
-                (trace-multi-binding* path form)
+                (trace-multi-binding* path form ns)
               #{'fn*}
-                (trace-single-binding* path form)
+                (trace-single-binding* path form ns)
               #{'fn}
-                (trace-fn path form)
+                (trace-fn path form ns)
               ;; default
-                (trace-rest* path form))
-           (trace-list* path form)))
+                (trace-rest* path form ns))
+           (trace-list* path form ns)))
     (map? form)
-      (trace-map* path form)
+      (trace-map* path form ns)
     (vector? form)
-      (trace-vector* path form)
+      (trace-vector* path form ns)
     (set? form)
-      (trace-set* path form)
+      (trace-set* path form ns)
     (symbol? form)
-      (trace-symbol* path form)
+      (trace-symbol* path form ns)
     :else
-      (trace-primitive* path form))))
+      (trace-primitive* path form ns))))
 
-(defn trace-defn [form]
+(defn trace-defn [form ns]
   (let [[_ name fn-form] (macroexpand-1 form)]
-    (trace-fn [] fn-form name)))
+    (trace-fn [] fn-form name ns)))
 

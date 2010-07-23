@@ -30,7 +30,7 @@
             assoc 
             (resolve (second form))
             (nth (macroexpand-1 form) 2))
-          (let [new-form (trace-defn form)
+          (let [new-form (trace-defn form ns)
                 new-fn (eval new-form)]
             (intern ns (with-meta name md) new-fn)))))))
 

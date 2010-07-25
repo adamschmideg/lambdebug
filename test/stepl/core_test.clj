@@ -4,21 +4,9 @@
     [clojure.test]
     [clojure.contrib
       [seq-utils :only (flatten indexed)]]
-    [stepl.core]))
+    [stepl core utils]))
 
 ;; generic utils
-(with-test
-  (defn flip
-    "Flip a sequence of map with roughly the same keys to a map of sequences"
-    ([maps] (flip maps (keys (first maps))))
-    ([maps ks]
-      (let [nils (zipmap ks (repeat nil))]
-        (apply merge-with conj
-          (zipmap ks (repeat []))
-          (for [m maps]
-            (merge nils m))))))
-  (is (= {:a [1 nil], :b [2 9]}
-         (flip [{:a 1 :b 2} {:b 9}]))))
 
 (with-test
   (defn first-diff
@@ -48,42 +36,7 @@
     [1 [2]], [1 [3]] :>> [2 3 [1 0]]
     [1 [2]], [1 [2 3]] :>> [nil 3 [1 1]]))
 
-(with-test
-  (defn column-display
-    "Convert items to strings right-padded with spaces so they are all of
-    equal width"
-    [coll]
-    (let [strings (map str coll)
-          width (apply max (map count strings))
-          fmt (format "%%-%ss" width)]
-      (map #(format fmt %) strings)))
-  (is (= ["1  " "abc" "[] "]
-        (column-display [1 "abc" []]))))
-
-(defn maps-to-lol
-  ([maps] (maps-to-lol maps (keys (first maps))))
-  ([maps ks]
-    (map #(map % ks) maps)))
-
 ;; helpers for testing trace-related stuff
-(defn make-steps
-  "Trace form, evaluate it, and return the steps taken"
-  [form]
-  (do
-     (send *traces* (constantly []))
-     (await-for 1000 *traces*)
-     (eval (trace-form form))
-     (await-for 1000 *traces*)
-     @*traces*))
-
-(defn nice-steps
-  [form]
-  (doseq [line (maps-to-lol
-                (remove #(find % :result) 
-                  (make-steps form))
-                [:path :form])]
-    (println line)))
-
 (defn check-trace-form
   "Check if tracing form results in the expected steps"
   [form expected]

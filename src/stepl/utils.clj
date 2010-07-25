@@ -4,6 +4,7 @@
       [set :as set]]
     [clojure.contrib.str-utils2 :as s])
   (:use
+    [clojure test]
     [clojure.contrib
       [repl-utils :only [get-source]]
       [seq-utils :only [flatten]]])
@@ -74,6 +75,18 @@
           (traverse transition visited (mapcat transition to-visit))))
       collected)))
 
+(defn used-vars-in-form
+  "Return vars used in a form"
+  [form ns]
+  (->> form
+    flatten
+    distinct
+    (filter symbol?)
+    (remove macro?)
+    (map #(ns-resolve ns %))
+    (filter var?)))
+
+
 (defn used-vars
   "Return vars used by a function"
   [func]
@@ -86,16 +99,39 @@
                            nil
                          :else
                            (println "oops" func (type func)))]
-    (let [ns (.ns func-var)]
-      (->> func-var
-        get-var-source
-        read-string
-        flatten
-        distinct
-        (filter symbol?)
-        (remove macro?)
-        (map #(ns-resolve ns %))
-        (filter var?)))))
+    (used-vars-in-form
+      (read-string (get-var-source func-var))
+      (.ns func-var))))
 
 ;; to get all functions used by a function even indirectly:
 ;; (traverse used-vars #'com.acme/foo)
+(with-test
+  (defn flip
+    "Flip a sequence of map with roughly the same keys to a map of sequences"
+    ([maps] (flip maps (keys (first maps))))
+    ([maps ks]
+      (let [nils (zipmap ks (repeat nil))]
+        (apply merge-with conj
+          (zipmap ks (repeat []))
+          (for [m maps]
+            (merge nils m))))))
+  (is (= {:a [1 nil], :b [2 9]}
+         (flip [{:a 1 :b 2} {:b 9}]))))
+
+(with-test
+  (defn column-display
+    "Convert items to strings right-padded with spaces so they are all of
+    equal width"
+    [coll]
+    (let [strings (map str coll)
+          width (apply max (map count strings))
+          fmt (format "%%-%ss" width)]
+      (map #(format fmt %) strings)))
+  (is (= ["1  " "abc" "[] "]
+        (column-display [1 "abc" []]))))
+
+(defn maps-to-lol
+  ([maps] (maps-to-lol maps (keys (first maps))))
+  ([maps ks]
+    (map #(map % ks) maps)))
+

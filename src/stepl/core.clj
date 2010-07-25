@@ -192,3 +192,13 @@
   (let [[_ name fn-form] (macroexpand-1 form)]
     (trace-fn [] fn-form name ns)))
 
+(defn make-steps
+  "Trace form, evaluate it, and return the steps taken"
+  [form]
+  (do
+     (send *traces* (constantly []))
+     (await-for 1000 *traces*)
+     (eval (trace-form [] form *ns*))
+     (await-for 1000 *traces*)
+     @*traces*))
+

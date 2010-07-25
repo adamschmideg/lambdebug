@@ -14,24 +14,24 @@
     [clojure.contrib.repl-utils]
     [clojure.contrib.duck-streams]
     [clojure.contrib [seq-utils :only (indexed)]]
-    [stepl
-      [core :only [trace-defn *function-forms* *traces* *trace-enabled*]]
-      [utils :only [repeat-str either]]])
+    [stepl core utils])
   (:import [java.util.Date]))
 
-(defn trace-func [func]
-  (let [md (meta (resolve func))
+(defn trace-func [func-var]
+  (let [md (meta func-var)
         name (:name md)
         ns (:ns md)]
-    (when-let [source (get-source func)]
+    (when-let [source (get-var-source func-var)]
       (let [form (read-string source)]
         (when (#{'defn 'defn-} (first form))
           (send *function-forms* 
             assoc 
             (resolve (second form))
             (nth (macroexpand-1 form) 2))
-          (let [new-form (trace-defn form ns)
-                new-fn (eval new-form)]
+          (when-let [new-fn (try
+                              (eval (trace-defn form ns))
+                              ;(catch Exception e (throw e)))]
+                              (catch Exception e (?? func-var e)))]
             (intern ns (with-meta name md) new-fn)))))))
 
 (defn trace-ns [ns-pattern]
@@ -82,3 +82,14 @@
        (dbg/gui #(= "q" %) 
          (dbg/make-dispatcher @*traces* @*function-forms*))
        (or result exception))))
+
+(defn nice-steps
+  [form]
+  (do
+    (doseq [v (traverse used-vars (used-vars-in-form form *ns*))]
+      (trace-func v))
+    (doseq [line (maps-to-lol
+                  (remove #(find % :result) 
+                    (make-steps form))
+                  [:path :form])]
+    (println line))))

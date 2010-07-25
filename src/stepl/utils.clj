@@ -34,8 +34,10 @@
   (iterator-seq (.iterator coll)))
 
 (defmacro ??
-  [exp]
-  `(println "debug:" '~exp ~exp))
+  [& exprs]
+  `(println " debug:"
+     ~@(mapcat (fn [x] `['~x "=" (try ~x (catch Exception e# e#)) ","]) 
+          exprs)))
 
 (defn var-to-sym
   "Return a fully qualified symbol for var"

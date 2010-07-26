@@ -135,3 +135,34 @@
   ([maps ks]
     (map #(map % ks) maps)))
 
+(with-test
+  (defn first-diff
+    "Return the first different values and the path to them,
+    or nil if the collections equal"
+    ([coll1 coll2] (first-diff coll1 coll2 0 []))
+    ([c1 c2 index path]
+      (if (and (coll? c1) (coll? c2))
+        (condp = [(empty? c1) (empty? c2)]
+          [true true]
+            nil
+          [true false]
+            [nil (first c2) (conj path index)]
+          [false true]
+            [(first c1) nil (conj path index)]
+          [false false]
+            (or
+              (first-diff (first c1) (first c2) 0 (conj path index))
+              (first-diff (rest c1) (rest c2) (inc index) path)
+              ))
+        (if (= c1 c2)
+          nil
+          [c1 c2 path]))))
+  (are [c1 c2 _ diff] (is (= (first-diff c1 c2) diff))
+    [1], [2] :>> [1 2 [0]]
+    [1], [1 9] :>> [nil 9 [1]]
+    [1 [2]], [1 [3]] :>> [2 3 [1 0]]
+    [1 [2]], [1 [2 3]] :>> [nil 3 [1 1]]))
+
+(defn assert-eq
+  [expected got]
+  (is (= expected got) (first-diff expected got)))

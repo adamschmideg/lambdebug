@@ -83,54 +83,76 @@
           (for [item (indexed form)]
             (trace-form [(first item)] (second item) ns)))))
 
-(defn trace-multi-binding*
-  "Trace a macro whose first arg is a vector of
-   free vars and values to be bound.  Only the values and the body is
-   traced:
-     (let [a b c d] ...) =>
-     (let [a (tr b) c (trace d)] ..."
-  [path form ns]
-  (let [func (first form)
-        params (fnext form)
-        body (nnext form)]
+(with-test
+  (defn trace-multi-binding*
+    "Trace a macro whose first arg is a vector of
+     free vars and values to be bound.  Only the values and the body is
+     traced:
+       (let [a b c d] ...) =>
+       (let [a (tr b) c (trace d)] ..."
+    [path form ns]
+    (let [func (first form)
+          params (fnext form)
+          body (nnext form)]
+      `(tr ~path ~form
+          (~func
+           ~(trace-pairs* [1] params ns)
+           ~@(for [item (indexed body)]
+              (trace-form [2] (second item) ns))))))
+)
+
+(with-test
+  (defn trace-single-binding*
+    "Trace a macro whose first arg is a param list, like fn*.  Only the
+    body is traced:
+      (fn* [a b] (inc a)) =>
+      (fn* [a b] (tr (inc a) ..."
+    [path form ns]
+    (let [func (first form)
+          params (fnext form)
+          body (nnext form)]
+      `(tr ~path ~form
+          (~func
+           ~params
+           ~@(for [item (indexed body)]
+              (trace-form [2 (first item)] (second item) ns))))))
+  (assert-eq 
+         '(stepl.core/tr [] (func [x y] (op x y))
+            (func [x y]
+              (stepl.core/tr [2 0] (op x y)
+                 ((stepl.core/tr [0] op op)
+                  (stepl.core/tr [1] x x)
+                  (stepl.core/tr [2] y y)))))
+         (trace-single-binding* [] '(func [x y] (op x y)) *ns*)))
+
+(with-test
+  (defn trace-rest*
+    "Keep the head unchanged, tr only the rest.
+     Used for most macros"
+    [path form ns]
     `(tr ~path ~form
-        (~func
-         ~(trace-pairs* [1] params ns)
-         ~@(for [item (indexed body)]
-            (trace-form [2] (second item) ns))))))
+       (~(first form)
+        ~@(for [item (indexed (next form))]
+           (trace-form [(inc (first item))] (second item) ns)))))
+  (is (= '(stepl.core/tr [] (if :maybe :yes :no)
+            (if (stepl.core/tr [1] :maybe :maybe)
+              (stepl.core/tr [2] :yes :yes)
+              (stepl.core/tr [3] :no :no)))
+         (trace-rest* [] '(if :maybe :yes :no) *ns*))))
 
-(defn trace-single-binding*
-  "Trace a macro whose first arg is a param list, like fn*.  Only the
-  body is traced:
-    (fn* [a b] (inc a)) =>
-    (fn* [a b] (tr (inc a) ..."
-  [path form ns]
-  (let [func (first form)
-        params (fnext form)
-        body (nnext form)]
-    `(tr ~path ~form
-        (~func
-         ~params
-         ~@(for [item (indexed body)]
-            (trace-form [2 (first item)] (second item) ns))))))
-
-(defn trace-rest*
-  "Keep the head unchanged, tr only the rest.
-   Used for most macros"
-  [path form ns]
-  `(tr ~path ~form
-     (~(first form)
-      ~@(for [item (indexed (next form))]
-         (trace-form [(inc (first item))] (second item) ns)))))
-
-(defn trace-only-rest*
-  "Same as trace-rest* but don't tr the whole form, either"
-  [path form ns]
-  `(~(first form)
-      ~@(for [item (indexed (next form))]
-         (trace-form 
-           (conj path (inc (first item))) (second item) ns))))
-
+(with-test
+  (defn trace-only-rest*
+    "Same as trace-rest* but don't tr the whole form, either"
+    [path form ns]
+    `(~(first form)
+        ~@(for [item (indexed (next form))]
+           (trace-form 
+             (conj path (inc (first item))) (second item) ns))))
+  (is (= '(if (stepl.core/tr [1] :maybe :maybe)
+              (stepl.core/tr [2] :yes :yes)
+              (stepl.core/tr [3] :no :no))
+          (trace-only-rest* [] '(if :maybe :yes :no) *ns*))))
+                                   
 (defn trace-fn
   "Trace fn in both forms, 
     (fn [x] ...), or (fn ([x] ..) ([x y] ..))"

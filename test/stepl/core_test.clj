@@ -55,4 +55,17 @@
       '(and nil 2)
       [
         [] '(and nil 2)
-        [1] nil])))
+        [1] nil]))
+  (testing "try-catch"
+    (check-trace-form
+      '(try (+ (/ 2 0) 1) (catch Exception e -1))
+      [
+        [] '(try (+ (/ 2 0) 1) (catch Exception e -1))
+        [1] '(+ (/ 2 0) 1)
+        [1 0] '+
+        [1 1] '(/ 2 0)
+        [1 1 0] '/
+        [1 1 1] 2
+        [1 1 2] 0
+        [2 3] -1])))
+

@@ -81,7 +81,11 @@
   [path form ns trace-whole? from-index]
   (let [children (map (fn [kid idx]
                         (if (>= idx from-index)
-                          (trace-form [idx] kid ns)
+                          (trace-form
+                            (if trace-whole?
+                              [idx]
+                              (conj path idx))
+                            kid ns)
                           kid))
                       form
                       (iterate inc 0))]
@@ -151,6 +155,10 @@
                 (trace-seq path form ns true 2)
               #{'fn}
                 (trace-fn path form ns)
+              #{'catch}
+                (trace-seq path form ns false 3)
+              #{'finally}
+                (trace-seq path form ns false 1)
               ;; default for macros
                 (trace-seq path form ns true 1))
            (trace-seq path form ns true 0)))
@@ -175,7 +183,9 @@
   (do
      (send *traces* (constantly []))
      (await-for 1000 *traces*)
-     (eval (trace-form [] form *ns*))
+     (try
+       (eval (trace-form [] form *ns*))
+       (catch Throwable t t))
      (await-for 1000 *traces*)
      @*traces*))
 

@@ -70,18 +70,25 @@
           (for [item (indexed (set-seq form))]
              (trace-form [(first item)] (second item) ns)))))
 
-(defn trace-list*
-  [path form ns]
-  `(tr ~path ~form
-      ~(for [item (indexed form)]
-          (trace-form [(first item)] (second item) ns))))
-
 (defn trace-vector*
   [path form ns]
   `(tr ~path ~form
       ~(into []
           (for [item (indexed form)]
             (trace-form [(first item)] (second item) ns)))))
+
+(defn trace-seq
+  [path form ns trace-whole? from-index]
+  (let [children (map (fn [kid idx]
+                        (if (>= idx from-index)
+                          (trace-form [idx] kid ns)
+                          kid))
+                      form
+                      (iterate inc 0))]
+    (if trace-whole?
+      `(tr ~path ~form
+         ~children)
+      children)))
 
 (with-test
   (defn trace-multi-binding*
@@ -101,68 +108,16 @@
               (trace-form [2] (second item) ns))))))
 )
 
-(with-test
-  (defn trace-single-binding*
-    "Trace a macro whose first arg is a param list, like fn*.  Only the
-    body is traced:
-      (fn* [a b] (inc a)) =>
-      (fn* [a b] (tr (inc a) ..."
-    [path form ns]
-    (let [func (first form)
-          params (fnext form)
-          body (nnext form)]
-      `(tr ~path ~form
-          (~func
-           ~params
-           ~@(for [item (indexed body)]
-              (trace-form [2 (first item)] (second item) ns))))))
-  (assert-eq 
-         '(stepl.core/tr [] (func [x y] (op x y))
-            (func [x y]
-              (stepl.core/tr [2 0] (op x y)
-                 ((stepl.core/tr [0] op op)
-                  (stepl.core/tr [1] x x)
-                  (stepl.core/tr [2] y y)))))
-         (trace-single-binding* [] '(func [x y] (op x y)) *ns*)))
-
-(with-test
-  (defn trace-rest*
-    "Keep the head unchanged, tr only the rest.
-     Used for most macros"
-    [path form ns]
-    `(tr ~path ~form
-       (~(first form)
-        ~@(for [item (indexed (next form))]
-           (trace-form [(inc (first item))] (second item) ns)))))
-  (is (= '(stepl.core/tr [] (if :maybe :yes :no)
-            (if (stepl.core/tr [1] :maybe :maybe)
-              (stepl.core/tr [2] :yes :yes)
-              (stepl.core/tr [3] :no :no)))
-         (trace-rest* [] '(if :maybe :yes :no) *ns*))))
-
-(with-test
-  (defn trace-only-rest*
-    "Same as trace-rest* but don't tr the whole form, either"
-    [path form ns]
-    `(~(first form)
-        ~@(for [item (indexed (next form))]
-           (trace-form 
-             (conj path (inc (first item))) (second item) ns))))
-  (is (= '(if (stepl.core/tr [1] :maybe :maybe)
-              (stepl.core/tr [2] :yes :yes)
-              (stepl.core/tr [3] :no :no))
-          (trace-only-rest* [] '(if :maybe :yes :no) *ns*))))
-                                   
 (defn trace-fn
   "Trace fn in both forms, 
     (fn [x] ...), or (fn ([x] ..) ([x y] ..))"
   ([path form ns] (trace-fn path form nil))
   ([path form name ns]
     (if (vector? (fnext form))
-      (trace-single-binding* path form ns)
+      (trace-seq path form ns true 2)
       (let [bodies (map (fn [body idx]
-                          (let [traced (trace-only-rest*
-                                         (conj path idx) body ns)]
+                          (let [traced (trace-seq
+                                         (conj path idx) body ns false 1)]
                              `(~(first traced)
                                (enter-function '~name '~ns
                                  (do ~@(next traced))))))
@@ -193,12 +148,12 @@
               #{'let 'for 'doseq 'binding}
                 (trace-multi-binding* path form ns)
               #{'fn*}
-                (trace-single-binding* path form ns)
+                (trace-seq path form ns true 2)
               #{'fn}
                 (trace-fn path form ns)
-              ;; default
-                (trace-rest* path form ns))
-           (trace-list* path form ns)))
+              ;; default for macros
+                (trace-seq path form ns true 1))
+           (trace-seq path form ns true 0)))
     (map? form)
       (trace-map* path form ns)
     (vector? form)

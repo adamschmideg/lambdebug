@@ -85,12 +85,13 @@
 
 (defn nice-steps
   [form]
-  (let [vars (traverse used-vars (used-vars-in-form form *ns*))]
-    (?? vars)
-    (doseq [v vars]
+  (let [vars (traverse used-vars (used-vars-in-form form *ns*))
+        core (find-ns 'clojure.core)
+        no-core-vars (remove #(= (.ns %) core) vars)]
+    (doseq [v no-core-vars]
       (trace-func v))
     (doseq [line (maps-to-lol
                   (remove #(find % :result) 
                     (make-steps form))
-                  [:path :form])]
+                  [:path :form :function])]
     (println line))))

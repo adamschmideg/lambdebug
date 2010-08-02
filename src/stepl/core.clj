@@ -24,7 +24,7 @@
 
 (defmacro enter-function
   [name ns form]
-  `(binding [*function* (ns-resolve ~ns ~name)
+  `(binding [*function* (safe-ns-resolve ~ns ~name)
              *path* []]
       ~form))
 
@@ -132,7 +132,7 @@
 (defn trace-symbol*
   "Trace symbols, trying to resolve them first, to display a nicer name"
   [path form ns]
-  `(tr ~path ~form ~(or (ns-resolve ns form) form)))
+  `(tr ~path ~form ~(or (safe-ns-resolve ns form) form)))
 
 (defn trace-primitive*
   [path form ns]
@@ -142,7 +142,7 @@
 (defn member-access?
   [sym ns]
   (and
-    (not (ns-resolve ns sym))
+    (not (safe-ns-resolve ns sym))
     (let [name (str sym)]
       (or
         (= \. (get name 0))
@@ -155,7 +155,7 @@
     (seq? form)
       (let [func (first form)]
         (cond
-          (or (special-symbol? func) (macro? func))
+          (or (special-symbol? func) (macro? func ns))
             (condp contains? func
                #{'let 'for 'doseq 'binding 'loop}
                  (trace-multi-binding* path form ns)

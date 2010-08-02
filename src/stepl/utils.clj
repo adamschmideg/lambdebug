@@ -11,12 +11,18 @@
   (:import (java.io LineNumberReader InputStreamReader PushbackReader)
            (clojure.lang RT)))
 
+(defn safe-ns-resolve
+  [ns sym]
+  (try
+    (ns-resolve ns sym)
+    (catch ClassNotFoundException _ nil)))
+
 (defn macro? 
   "Test if a symbol refers to a macro"
-  [sym]
+  [sym ns]
   (and 
     (symbol? sym)
-    (:macro (meta (resolve sym)))))
+    (:macro (meta (safe-ns-resolve ns sym)))))
 
 (defmacro either
   "Return either [nil result] in normal case,
@@ -39,6 +45,9 @@
   `(println " debug:"
      ~@(mapcat (fn [x] `['~x "=" (try ~x (catch Exception e# e#)) ","]) 
           exprs)))
+
+(defn warn [& msgs]
+  (apply println "Warning:" msgs))
 
 (defn var-to-sym
   "Return a fully qualified symbol for var"
@@ -82,8 +91,9 @@
     flatten
     distinct
     (filter symbol?)
-    (remove macro?)
-    (map #(ns-resolve ns %))
+    (remove
+      #(or (special-symbol? %) (macro? % ns)))
+    (map #(safe-ns-resolve ns %))
     (filter var?)))
 
 
@@ -99,9 +109,11 @@
                            nil
                          :else
                            (println "oops" func (type func)))]
-    (used-vars-in-form
-      (read-string (get-var-source func-var))
-      (.ns func-var))))
+    (if-let [source (get-var-source func-var)]
+      (used-vars-in-form
+        (read-string source)
+        (.ns func-var))
+      (warn "No source for " func-var))))
 
 ;; to get all functions used by a function even indirectly:
 ;; (traverse used-vars #'com.acme/foo)

@@ -85,8 +85,9 @@
 
 (defn nice-steps
   [form]
-  (do
-    (doseq [v (traverse used-vars (used-vars-in-form form *ns*))]
+  (let [vars (traverse used-vars (used-vars-in-form form *ns*))]
+    (?? vars)
+    (doseq [v vars]
       (trace-func v))
     (doseq [line (maps-to-lol
                   (remove #(find % :result) 

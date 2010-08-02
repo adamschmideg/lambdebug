@@ -94,23 +94,22 @@
          ~children)
       children)))
 
-(with-test
-  (defn trace-multi-binding*
-    "Trace a macro whose first arg is a vector of
-     free vars and values to be bound.  Only the values and the body is
-     traced:
-       (let [a b c d] ...) =>
-       (let [a (tr b) c (trace d)] ..."
-    [path form ns]
-    (let [func (first form)
-          params (fnext form)
-          body (nnext form)]
-      `(tr ~path ~form
-          (~func
-           ~(trace-pairs* [1] params ns)
-           ~@(for [item (indexed body)]
-              (trace-form [2] (second item) ns))))))
-)
+(defn trace-multi-binding*
+  "Trace a macro whose first arg is a vector of
+   free vars and values to be bound.  Only the values and the body is
+   traced:
+     (let [a b c d] ...) =>
+     (let [a (tr b) c (trace d)] ..."
+  [path form ns]
+  (let [func (first form)
+        params (fnext form)
+        body (nnext form)]
+    `(tr ~path ~form
+        (~func
+         ~(trace-pairs* [1] params ns)
+         ~@(for [item (indexed body)]
+            (trace-form [2] (second item) ns))))))
+
 
 (defn trace-fn
   "Trace fn in both forms, 
@@ -139,29 +138,43 @@
   [path form ns]
   `(tr ~path ~form ~form))
 
+;; java interop
+(defn member-access?
+  [sym ns]
+  (and
+    (not (ns-resolve ns sym))
+    (let [name (str sym)]
+      (or
+        (= \. (get name 0))
+        (s/contains? name "/")))))
+
 (defn trace-form 
   ([form ns] (trace-form nil form ns))
   ([path form ns]
   (cond
     (seq? form)
       (let [func (first form)]
-        (if (or
-              (special-symbol? func)
-              (macro? func))
-           (condp contains? func
-              #{'let 'for 'doseq 'binding}
-                (trace-multi-binding* path form ns)
-              #{'fn*}
-                (trace-seq path form ns true 2)
-              #{'fn}
-                (trace-fn path form ns)
-              #{'catch}
-                (trace-seq path form ns false 3)
-              #{'finally}
-                (trace-seq path form ns false 1)
-              ;; default for macros
-                (trace-seq path form ns true 1))
-           (trace-seq path form ns true 0)))
+        (cond
+          (or (special-symbol? func) (macro? func))
+            (condp contains? func
+               #{'let 'for 'doseq 'binding 'loop}
+                 (trace-multi-binding* path form ns)
+               #{'fn*}
+                 (trace-seq path form ns true 2)
+               #{'fn}
+                 (trace-fn path form ns)
+               #{'catch}
+                 (trace-seq path form ns false 3)
+               #{'finally 'recur}
+                 (trace-seq path form ns false 1)
+               #{'.}
+                 (trace-seq path form ns true 3)
+               ;; default for macros
+                 (trace-seq path form ns true 1))
+          (member-access? func ns)
+            (trace-seq path form ns true 1)
+          :default
+            (trace-seq path form ns true 0)))
     (map? form)
       (trace-map* path form ns)
     (vector? form)
@@ -185,7 +198,7 @@
      (await-for 1000 *traces*)
      (try
        (eval (trace-form [] form *ns*))
-       (catch Throwable t t))
+       (catch Throwable t (println "caught" t)))
      (await-for 1000 *traces*)
      @*traces*))
 

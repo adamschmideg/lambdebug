@@ -1,0 +1,10 @@
+From: Adam Schmideg
+Date: Wed, 04 Aug 2010 16:20:30 +0200
+State: new
+Subject: Trace loop-recur
+Message-Id: <86e279dd8b22075f-0-artemis@pickles>
+
+Tracing a loop now moves recur out of its tail position, resulting in a
+compilation error.  Possible solutions,
+ - Detect recur in forms, and don't trace along the path leading to it
+ - Have a trace-recur function that has to be called explicitly

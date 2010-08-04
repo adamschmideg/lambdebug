@@ -42,8 +42,12 @@
 
 (defmacro ??
   [& exprs]
-  `(println " debug:"
-     ~@(mapcat (fn [x] `['~x "=" (try ~x (catch Exception e# e#)) ","]) 
+  `(println " Debug:"
+     ~@(mapcat
+         (fn [x] 
+           (if (string? x)
+             `[~x]
+             `['~x "=" (try ~x (catch Exception e# e#)) ","]) )
           exprs)))
 
 (defn warn [& msgs]
@@ -92,7 +96,10 @@
     distinct
     (filter symbol?)
     (remove
-      #(or (special-symbol? %) (macro? % ns)))
+      #(or 
+         (special-symbol? %)
+         (macro? % ns)
+         (var? %)))
     (map #(safe-ns-resolve ns %))
     (filter var?)))
 

@@ -31,8 +31,9 @@
           (when-let [new-fn (try
                               (eval (trace-defn form ns))
                               ;(catch Exception e (throw e)))]
-                              (catch Exception e (?? func-var e)))]
-            (intern ns (with-meta name md) new-fn)))))))
+                              (catch Exception e (?? "Cannot trace" func-var e)))]
+            (intern ns (with-meta name md) new-fn)
+            (?? "Traced" func-var)))))))
 
 (defn trace-ns [ns-pattern]
   (let [namespaces (filter #(.startsWith (str %) ns-pattern)
@@ -84,14 +85,17 @@
        (or result exception))))
 
 (defn nice-steps
-  [form]
-  (let [vars (traverse used-vars (used-vars-in-form form *ns*))
-        core (find-ns 'clojure.core)
-        no-core-vars (remove #(= (.ns %) core) vars)]
-    (doseq [v no-core-vars]
-      (trace-func v))
-    (doseq [line (maps-to-lol
-                  (remove #(find % :result) 
-                    (make-steps form))
-                  [:path :form :function])]
-    (println line))))
+  "Trace form and functions used by it.  Functions can be filtered a
+  `wanted` function"
+  ([form]
+    (nice-steps form (complement #(= (.ns %) (find-ns 'clojure.core)))))
+  ([form wanted]
+    (let [vars (traverse used-vars (used-vars-in-form form *ns*))
+          wanted-vars (filter wanted vars)]
+      (doseq [v wanted-vars]
+        (trace-func v))
+      (doseq [line (maps-to-lol
+                    (remove #(find % :result) 
+                      (make-steps form))
+                    [:path :form :function])]
+      (println line)))))

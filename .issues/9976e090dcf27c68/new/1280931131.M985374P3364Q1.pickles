@@ -1,0 +1,9 @@
+From: Adam Schmideg
+Date: Wed, 04 Aug 2010 16:11:01 +0200
+State: new
+Subject: CompilerException: Exception: Unable to resolve symbol: with-pretty-writer
+Message-Id: <9976e090dcf27c68-0-artemis@pickles>
+
+Testing
+(use 'clojure.contrib.pprint)
+(nice-steps '(pprint [2]))

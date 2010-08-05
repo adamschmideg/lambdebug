@@ -17,23 +17,28 @@
     [stepl core utils])
   (:import [java.util.Date]))
 
-(defn trace-func [func-var]
-  (let [md (meta func-var)
-        name (:name md)
-        ns (:ns md)]
-    (when-let [source (get-var-source func-var)]
-      (let [form (read-string source)]
-        (when (#{'defn 'defn-} (first form))
-          (send *function-forms* 
-            assoc 
-            (resolve (second form))
-            (nth (macroexpand-1 form) 2))
-          (when-let [new-fn (try
-                              (eval (trace-defn form ns))
-                              ;(catch Exception e (throw e)))]
-                              (catch Exception e (?? "Cannot trace" func-var e)))]
-            (intern ns (with-meta name md) new-fn)
-            (?? "Traced" func-var)))))))
+(defn trace-func
+  ([func-var] (trace-func func-var true))
+  ([func-var print?]
+    (let [md (meta func-var)
+          name (:name md)
+          ns (:ns md)]
+      (when-let [source (get-var-source func-var)]
+        (let [form (read-string source)]
+          (when (#{'defn 'defn-} (first form))
+            (send *function-forms* 
+              assoc 
+              (resolve (second form))
+              (nth (macroexpand-1 form) 2))
+            (when-let [new-fn (try
+                                (eval (trace-defn form ns))
+                                (catch Exception e 
+                                  (if print?
+                                    (?? "Cannot trace" func-var e)
+                                    (throw e))))]
+              (intern ns (with-meta name md) new-fn)
+              (when print?
+                (?? "Traced" func-var)))))))))
 
 (defn trace-ns [ns-pattern]
   (let [namespaces (filter #(.startsWith (str %) ns-pattern)

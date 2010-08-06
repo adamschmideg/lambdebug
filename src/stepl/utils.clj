@@ -11,11 +11,24 @@
   (:import (java.io LineNumberReader InputStreamReader PushbackReader)
            (clojure.lang RT)))
 
+(defmacro ??
+  [& exprs]
+  `(println " Debug:"
+     ~@(mapcat
+         (fn [x] 
+           (if (string? x)
+             `[~x]
+             `['~x "=" (try ~x (catch Exception e# e#)) ","]) )
+          exprs)))
+
+(defn warn [& msgs]
+  (apply println "Warning:" msgs))
+
 (defn safe-ns-resolve
   [ns sym]
   (try
     (ns-resolve ns sym)
-    (catch ClassNotFoundException _ nil)))
+    (catch Exception e (?? sym e))))
 
 (defn macro? 
   "Test if a symbol refers to a macro"
@@ -39,19 +52,6 @@
    Note: (seq coll) wouldn't do that."
   [coll]
   (iterator-seq (.iterator coll)))
-
-(defmacro ??
-  [& exprs]
-  `(println " Debug:"
-     ~@(mapcat
-         (fn [x] 
-           (if (string? x)
-             `[~x]
-             `['~x "=" (try ~x (catch Exception e# e#)) ","]) )
-          exprs)))
-
-(defn warn [& msgs]
-  (apply println "Warning:" msgs))
 
 (defn var-to-sym
   "Return a fully qualified symbol for var"

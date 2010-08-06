@@ -1,7 +1,11 @@
 (ns
   stepl.coverage
   (:use
-    [stepl :only [trace-func]]
+    [stepl 
+      [core :only [trace-defn]]
+      [utils :only [get-var-source]]]
+    [clojure
+      [stacktrace :only [root-cause]]]
     [clojure.contrib
       [find-namespaces :only [find-namespaces-on-classpath]]
       [ns-utils :only [ns-vars]]]))
@@ -12,24 +16,36 @@
     (filter #(.startsWith (name %) "clojure.contrib"))
     (remove #{'clojure.core 'clojure.main})
     (remove #(.startsWith (name %) "clojure.contrib.datalog"))
-    (remove #{'clojure.contrib.datalog.example
-              'clojure.contrib.datalog
+    (remove #(.startsWith (name %) "clojure.contrib.probabilities"))
+    (remove #{'clojure.contrib.javadoc
+              'clojure.contrib.test-contrib.walk
               })))
 
-(defn trace-and-compile
-  ([] (trace-and-compile (safe-namespaces)))
+(defn decorate
+  [func-var]
+    (let [md (meta func-var)
+          name (:name md)
+          ns (:ns md)]
+      (when-let [source (get-var-source func-var)]
+        (let [form (read-string source)]
+          (when (#{'defn 'defn-} (first form))
+            (trace-defn form ns))))))
+
+(defn check-ns
+  [ns]
+    (do
+      (require ns)
+      (for [var (ns-vars ns)]
+        (let [func-var (ns-resolve ns var)]
+          (try
+            (eval (decorate func-var))
+            [func-var nil]
+            (catch Exception e [func-var (root-cause e)]))))))
+
+(defn check-all
+  ([] (check-all (safe-namespaces)))
   ([namespaces]
-    (remove nil?
-      (apply concat
-        (for [ns namespaces]
-          (do
-            (require ns)
-            (remove nil?
-              (for [var (ns-vars ns)]
-                (let [func-var (ns-resolve ns var)]
-                  (try
-                    (trace-func func-var false)
-                    (catch Exception e [func-var e])))))))))))
+    (mapcat check-ns namespaces)))
 
 (defn sort-result
   [funcs-and-errors]

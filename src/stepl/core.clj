@@ -148,6 +148,10 @@
         (= \. (get name 0))
         (s/contains? name "/")))))
 
+(defn new?
+  [sym]
+  (.endsWith (str sym) "."))
+
 (defn trace-form 
   ([form ns] (trace-form nil form ns))
   ([path form ns]
@@ -157,7 +161,7 @@
         (cond
           (or (special-symbol? func) (macro? func ns))
             (condp contains? func
-               #{'let 'for 'doseq 'binding 'loop}
+               #{'let 'for 'doseq 'binding 'loop 'if-let 'when-let}
                  (trace-multi-binding* path form ns)
                #{'fn*}
                  (trace-seq path form ns true 2)
@@ -172,6 +176,8 @@
                ;; default for macros
                  (trace-seq path form ns true 1))
           (member-access? func ns)
+            (trace-seq path form ns true 1)
+          (new? func)
             (trace-seq path form ns true 1)
           :default
             (trace-seq path form ns true 0)))

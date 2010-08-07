@@ -3,7 +3,7 @@
   (:use
     [stepl 
       [core :only [trace-defn]]
-      [utils :only [var-source-form]]]
+      [utils :only [var-source-form qualify-symbols]]]
     [clojure
       [stacktrace :only [root-cause]]]
     [clojure.contrib
@@ -26,7 +26,7 @@
   (let [ns (:ns (meta func-var))]
     (when-let [form (var-source-form func-var)]
       (when (#{'defn 'defn-} (first form))
-        (trace-defn form ns)))))
+        (qualify-symbols ns (trace-defn form ns))))))
 
 (defn check-ns
   [ns]

@@ -182,7 +182,7 @@
           (member-access? func ns)
             (trace-seq path form ns true 1)
           (new? func)
-            (trace-seq path form ns true 1)
+            (trace-seq path (macroexpand-1 form) ns true 2)
           :default
             (trace-seq path form ns true 0)))
     (map? form)

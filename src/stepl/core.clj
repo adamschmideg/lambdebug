@@ -115,7 +115,7 @@
 (defn trace-fn
   "Trace fn in both forms, 
     (fn [x] ...), or (fn ([x] ..) ([x y] ..))"
-  ([path form ns] (trace-fn path form nil))
+  ([path form ns] (trace-fn path form nil ns))
   ([path form name ns]
     (if (vector? (fnext form))
       (trace-seq path form ns true 2)

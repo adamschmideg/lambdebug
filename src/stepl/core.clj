@@ -174,7 +174,10 @@
                #{'.}
                  (trace-seq path form ns true 3)
                ;; default for macros
-                 (trace-seq path form ns true 1))
+               (if (vector? (second form))
+                 ; heuristic for (doxxx [var binding] body) type of macros
+                 (trace-multi-binding* path form ns)
+                 (trace-seq path form ns true 1)))
           (member-access? func ns)
             (trace-seq path form ns true 1)
           (new? func)

@@ -4,7 +4,8 @@
       [set :as set]]
     [clojure.contrib.str-utils2 :as s])
   (:use
-    [clojure test]
+    [clojure test
+      [walk :only [prewalk]]]
     [clojure.contrib
       [repl-utils :only [get-source]]
       [seq-utils :only [flatten]]])
@@ -56,9 +57,10 @@
 (defn var-to-sym
   "Return a fully qualified symbol for var"
   [v]
-  (-> v str (subs 1) symbol))
+  (when v
+    (-> v str (subs 1) symbol)))
 
-(defn get-var-source
+(defn var-source-form
   "Get source of var if it refers to a function"
   [v]
   (when-let [filepath (:file (meta v))]
@@ -71,7 +73,7 @@
                                (.append text (char i))
                                i)))]
           (read (PushbackReader. pbr))
-          (str text))))))
+          (read-string (str text)))))))
 
 (defn traverse
   "Traverse a graph using a transition function that returns
@@ -116,9 +118,9 @@
                            nil
                          :else
                            (println "oops" func (type func)))]
-    (if-let [source (get-var-source func-var)]
+    (if-let [form (var-source-form func-var)]
       (used-vars-in-form
-        (read-string source)
+        form
         (.ns func-var))
       (warn "No source for " func-var))))
 
@@ -185,3 +187,12 @@
 (defn assert-eq
   [expected got]
   (is (= expected got) (first-diff expected got)))
+
+(defn qualify-symbols
+  [ns form]
+  (prewalk (fn [x]
+             (if (symbol? x)
+               (or (safe-ns-resolve ns x)
+                 x)
+               x))
+    form))

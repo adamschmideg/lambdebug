@@ -9,7 +9,8 @@
     [clojure.contrib.pprint]
     [clojure.contrib.repl-utils]
     [clojure.contrib.duck-streams]
-    [clojure.contrib [seq-utils :only (indexed)]]
+    [clojure.contrib
+      [seq-utils :only [indexed]]]
     [stepl
       utils])
   (:import [java.util.Date]))
@@ -198,6 +199,29 @@
 (defn trace-defn [form ns]
   (let [[_ name fn-form] (macroexpand-1 form)]
     (trace-fn [] fn-form name ns)))
+
+(defn trace-func
+  ([func-var] (trace-func func-var true))
+  ([func-var debug?]
+    (let [md (meta func-var)
+          name (:name md)
+          ns (:ns md)]
+      (when-let [form (var-source-form func-var)]
+        (when (#{'defn 'defn-} (first form))
+          (send *function-forms* 
+            assoc 
+            (resolve (second form))
+            (nth (macroexpand-1 form) 2))
+          (try
+            (let [new-form (qualify-symbols ns (trace-defn form ns))
+                  new-fn (eval new-form)]
+              (intern ns (with-meta name md) new-fn)
+              (when debug?
+                (?? "Traced" func-var)))
+            (catch Exception e 
+              (if debug?
+                (?? "Cannot trace" func-var e)
+                (throw e)))))))))
 
 (defn make-steps
   "Trace form, evaluate it, and return the steps taken"

@@ -3,7 +3,7 @@
   (:use
     [stepl 
       [core :only [trace-defn]]
-      [utils :only [get-var-source]]]
+      [utils :only [var-source-form]]]
     [clojure
       [stacktrace :only [root-cause]]]
     [clojure.contrib
@@ -23,13 +23,10 @@
 
 (defn decorate
   [func-var]
-    (let [md (meta func-var)
-          name (:name md)
-          ns (:ns md)]
-      (when-let [source (get-var-source func-var)]
-        (let [form (read-string source)]
-          (when (#{'defn 'defn-} (first form))
-            (trace-defn form ns))))))
+  (let [ns (:ns (meta func-var))]
+    (when-let [form (var-source-form func-var)]
+      (when (#{'defn 'defn-} (first form))
+        (trace-defn form ns)))))
 
 (defn check-ns
   [ns]

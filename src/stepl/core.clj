@@ -213,7 +213,7 @@
             (resolve (second form))
             (nth (macroexpand-1 form) 2))
           (try
-            (let [new-form (qualify-symbols ns (trace-defn form ns))
+            (let [new-form (resolve-tree ns (trace-defn form ns))
                   new-fn (eval new-form)]
               (intern ns (with-meta name md) new-fn)
               (when debug?

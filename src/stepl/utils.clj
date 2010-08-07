@@ -28,7 +28,8 @@
 (defn safe-ns-resolve
   [ns sym]
   (try
-    (ns-resolve ns sym)
+    (when (symbol? sym)
+      (ns-resolve ns sym))
     (catch Exception e (?? sym e))))
 
 (defn macro? 
@@ -188,11 +189,19 @@
   [expected got]
   (is (= expected got) (first-diff expected got)))
 
-(defn qualify-symbols
+(defn resolve-tree
+  "Resolve symbols in form, except for symbols from core.
+  They can be resolved anyway, and they are sometimes used
+  as variables (e.g. 'name')."
   [ns form]
-  (prewalk (fn [x]
-             (if (symbol? x)
-               (or (safe-ns-resolve ns x)
-                 x)
-               x))
-    form))
+  (let [core (find-ns 'clojure.core)]
+    (prewalk
+      (fn [x]
+        (let [resolved (safe-ns-resolve ns x)
+              good-ns (and
+                         (var? resolved)
+                         (not (= core (.ns resolved))))]
+          (if (and resolved good-ns)
+            resolved
+            x)))
+      form)))

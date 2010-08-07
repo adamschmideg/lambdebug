@@ -1,0 +1,13 @@
+
+- other java interop (doto, proxy-super, etc): a few more
+- (proxy ...) macro 4 Exception: Can't resolve
+- (.. ...) macro: 5 IllegalArgumentException: Malformed member expression>]
+- static fields and methods are not resolved: 10 Exception: No such namespace
+- (binding ...) macro + macros with a different binding than in a vector as first arg: 14 ClassCastException: clojure.lang.Var cannot be cast to clojure.lang.Symbol>]
+- binding and def within toplevel let: 14 Exception: Unable to resolve symbol
+- (-> ...) macro: 14 IllegalArgumentException: Wrong number of args passed to
+- named lambda, like (fn foo [x] ...): 15 IllegalArgumentException: Don't know how to create ISeq from
+- a variable with the same name as a function (no problem with core, such as 'name'): 20 Exception: Unsupported binding form
+- recur: 20 UnsupportedOperationException: Can only recur from tail position>]
+- private vars and functions: 21 IllegalStateException: var
+- type hint: 33 IllegalArgumentException: Unable to resolve classname

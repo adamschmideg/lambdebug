@@ -7,6 +7,7 @@
     [clojure
       [stacktrace :only [root-cause]]]
     [clojure.contrib
+      [duck-streams :only [append-spit]]
       [find-namespaces :only [find-namespaces-on-classpath]]
       [ns-utils :only [ns-vars]]]))
 
@@ -52,4 +53,8 @@
       (str (second %2)))
     funcs-and-errors))
 
-; (sort-result (doall (trace-and-compile)))
+(defn write-check
+  [file]
+  (let [result (check-all)]
+    (doseq [line result]
+      (append-spit file line))))

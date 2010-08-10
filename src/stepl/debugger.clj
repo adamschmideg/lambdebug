@@ -175,8 +175,8 @@
   [traces index]
   (let [traces (drop index traces)
         level (:level (first traces))]
-    (+ index (count (take-while #(<= level (:level %))
-                      (next traces))))))
+    (+ 1 index (count (take-while #(<= level (:level %))
+                        (next traces))))))
 
 (defn print-usage
   [& _]

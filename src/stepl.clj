@@ -55,16 +55,13 @@
          trace)))
 
 (defn debug
-  [expr]
-  (binding [*trace-enabled* true]
-     (send *traces* (constantly []))
-     (let [[exception result] (either (eval expr))]
-       (await-for 1000 *traces*)
-       (doseq [tr (format-trace @*traces*)] (print tr))
-       ;; call debugger
-       (dbg/gui #(= "q" %) 
-         (dbg/make-dispatcher @*traces* @*function-forms*))
-       (or result exception))))
+  [form]
+  (do
+    (trace-used-vars form)
+    (send *function-forms* assoc nil form)
+    (binding [*trace-enabled* true]
+      (dbg/gui #(= "q" %) 
+        (dbg/make-dispatcher (make-steps form) @*function-forms*)))))
 
 (defn nice-steps
   "Trace form and functions used by it.  Functions can be filtered a

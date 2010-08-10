@@ -8,8 +8,7 @@
   (:use
     [clojure
       test]
-    [stepl
-      [utils :only [set-seq]]]))
+    [stepl utils]))
 
 (def *trace-index* (agent 0))
 
@@ -104,10 +103,13 @@
     [coll path f]
     (let [head (first path)
           tail (seq (next path))]
-      (when head
+      (if head
         (if tail
           (edit-at coll head #(edit-path % tail f))
-          (edit-at coll head f)))))
+          (edit-at coll head f))
+        (f coll))))
+  (is (= (edit-path [1 2 3] [] str)
+         "[1 2 3]"))
   (is (= (edit-path 
             [:a {:b 42} :c] [1 0] str)
             [:a {":b" 42} :c]))
@@ -134,13 +136,13 @@
   (let [trace (nth traces index)
         func-form (functions (trace :function))
         form (edit-path func-form (trace :path) decorate)]
-
-      (println (trace :function))
-      (println (trace :form) "===" (trace :path) "<<<" func-form)
+      (?? index func-form trace)
+      (println "Function:" (or (trace :function) "Given at REPL"))
+      (print "Form: ")
       (pp/with-pprint-dispatch pp/*code-dispatch*
         (pp/pprint form))
       (when-let [result (trace :result)]
-        (println "Result:")
+        (print "Result: ")
         (pp/pprint result))))
 
 (defn step-in

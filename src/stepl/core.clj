@@ -21,7 +21,7 @@
 (def *trace-enabled* nil)
 
 (def *traces* (agent nil))
-(def *function-forms* (agent nil))
+(def *function-forms* (agent {}))
 
 (defmacro enter-function
   [name ns form]
@@ -222,6 +222,16 @@
               (if debug?
                 (?? "Cannot trace" func-var e)
                 (throw e)))))))))
+
+(defn trace-used-vars
+  "Trace all vars used by form"
+  ([form]
+    (trace-used-vars form (complement #(= (.ns %) (find-ns 'clojure.core)))))
+  ([form wanted]
+    (let [vars (traverse used-vars (used-vars-in-form form *ns*))
+          wanted-vars (filter wanted vars)]
+      (doseq [v wanted-vars]
+        (trace-func v)))))
 
 (defn make-steps
   "Trace form, evaluate it, and return the steps taken"

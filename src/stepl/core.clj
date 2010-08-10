@@ -25,7 +25,7 @@
 
 (defmacro enter-function
   [name ns form]
-  `(binding [*function* (safe-ns-resolve ~ns ~name)
+  `(binding [*function* ~name
              *path* []]
       ~form))
 
@@ -210,7 +210,7 @@
         (when (#{'defn 'defn-} (first form))
           (send *function-forms* 
             assoc 
-            (resolve (second form))
+            (ns-resolve ns (second form))
             (nth (macroexpand-1 form) 2))
           (try
             (let [new-form (resolve-tree ns (trace-defn form ns))

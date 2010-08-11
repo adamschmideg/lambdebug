@@ -2,6 +2,6 @@ syntax: glob
 lib/*
 clojurerc.clj
 classes/*
-stepl*.jar
+lambdebug*.jar
 pom.xml
 *.swp

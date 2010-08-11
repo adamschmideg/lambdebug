@@ -136,7 +136,6 @@
   (let [trace (nth traces index)
         func-form (functions (trace :function))
         form (edit-path func-form (trace :path) decorate)]
-      (?? index func-form trace)
       (println "Function:" (or (trace :function) "Given at REPL"))
       (print "Form: ")
       (pp/with-pprint-dispatch pp/*code-dispatch*

@@ -1,4 +1,4 @@
-(ns stepl.utils
+(ns lambdebug.utils
   (:require
     [clojure
       [set :as set]]

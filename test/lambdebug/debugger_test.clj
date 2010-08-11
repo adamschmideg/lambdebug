@@ -1,8 +1,8 @@
 (ns
-  stepl.debugger-test
+  lambdebug.debugger-test
   (:use
     [clojure.test]
-    [stepl debugger]))
+    [lambdebug debugger]))
 
 (deftest step-test
   (let [traces [{:id 0, :level 0}

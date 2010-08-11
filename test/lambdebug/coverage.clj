@@ -1,7 +1,7 @@
 (ns
-  stepl.coverage
+  lambdebug.coverage
   (:use
-    [stepl 
+    [lambdebug 
       [core :only [trace-defn]]
       [utils :only [var-source-form resolve-tree]]]
     [clojure

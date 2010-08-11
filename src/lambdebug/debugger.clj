@@ -1,6 +1,6 @@
 (ns #^{:doc "Step and debug in clojure REPL"
        :author "Adam Schmideg"}
-  stepl.debugger
+  lambdebug.debugger
   (:require
     [clojure.contrib
       [str-utils2 :as string]
@@ -8,7 +8,7 @@
   (:use
     [clojure
       test]
-    [stepl utils]))
+    [lambdebug utils]))
 
 (def *trace-index* (agent 0))
 

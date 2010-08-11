@@ -1,10 +1,10 @@
 (ns
-  stepl.core-test
+  lambdebug.core-test
   (:use
     [clojure.test]
     [clojure.contrib
       [seq-utils :only (flatten indexed)]]
-    [stepl core utils]))
+    [lambdebug core utils]))
 
 ;; helpers for testing trace-related stuff
 (defn check-trace-form

@@ -1,6 +1,6 @@
 (ns #^{:doc "Step and debug in clojure REPL"
        :author "Adam Schmideg"}
-  stepl.core
+  lambdebug.core
   (:require
     [clojure.contrib
       [str-utils2 :as s]])
@@ -11,7 +11,7 @@
     [clojure.contrib.duck-streams]
     [clojure.contrib
       [seq-utils :only [indexed]]]
-    [stepl
+    [lambdebug
       utils])
   (:import [java.util.Date]))
 

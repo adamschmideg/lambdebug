@@ -2,11 +2,11 @@
 ;; http://wave.thewe.net/2009/12/17/logging-and-debugging-in-clojure-followup-complete-tracing/
 (ns #^{:doc "Step and debug in clojure REPL"
        :author "Adam Schmideg"}
-  stepl
+  lambdebug
   (:require
     [clojure.contrib
       [str-utils2 :as s]]
-    [stepl
+    [lambdebug
       [debugger :as dbg]])
   (:use 
     [clojure.test]
@@ -14,7 +14,7 @@
     [clojure.contrib.repl-utils]
     [clojure.contrib.duck-streams]
     [clojure.contrib [seq-utils :only (indexed)]]
-    [stepl core utils])
+    [lambdebug core utils])
   (:import [java.util.Date]))
 
 (defn debug

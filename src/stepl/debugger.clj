@@ -161,9 +161,11 @@
 (defn step-prev
   "Go to the previous trace, sort of inverse of step-next"
   [traces index]
-  (do
-    (println "Sorry, not implemented yet")
-    index))
+  (let [traces (reverse (take (inc index) traces))
+        level (:level (first traces))
+        offset (count (take-while #(< level (:level %))
+                        (next traces)))]
+    (- index offset 1)))
 
 (defn step-back
   "Go one step back, the inverse of step-in"

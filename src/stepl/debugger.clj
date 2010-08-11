@@ -183,12 +183,13 @@
 (defn print-usage
   [& _]
   (println "Help: choose
-    step (i)n, (n)ext, (b)ack, (o)ut"))
+    step (i)n, (n)ext, (b)ack, (p)rev, (o)ut"))
     
 (def *COMMANDS*
   {"i" step-in
    "n" step-next
    "b" step-back
+   "p" step-prev
    "o" step-out
    "h" print-usage})
 
@@ -201,15 +202,16 @@
       (let [index (func traces @*trace-index*)]
         (when (contains? traces index)
           (send *trace-index* (constantly index))
-          (print-trace traces index function-forms)
-          (await-for 1000 *trace-index*)))
+          (await-for 1000 *trace-index*))
+        (print-trace traces @*trace-index* function-forms))
       (print-usage))))
 
 (defn gui
   "Start an interactive gui, read commands, print the result of
    (dispatcher command) until (exit command) is true."
-  [exit dispatcher & [prompt]]
-  (let [prompt (or prompt ">>> ")]
+  [exit dispatcher first-command]
+  (let [prompt ">>> "]
+    (dispatcher first-command)
     (print prompt)
     (flush)
     (loop [command (read-line)]

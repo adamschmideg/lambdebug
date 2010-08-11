@@ -61,7 +61,8 @@
     (send *function-forms* assoc nil form)
     (binding [*trace-enabled* true]
       (dbg/gui #(= "q" %) 
-        (dbg/make-dispatcher (make-steps form) @*function-forms*)))))
+        (dbg/make-dispatcher (make-steps form) @*function-forms*)
+        "i"))))
 
 (defn nice-steps
   "Trace form and functions used by it.  Functions can be filtered a

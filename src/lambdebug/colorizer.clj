@@ -1,5 +1,7 @@
 (ns
-  lambdebug.colorizer)
+  lambdebug.colorizer
+  (:require
+    [clojure.contrib str-utils :as s]))
 
 (defn substring-indexes-in-form
   "Interpret s as a form and return 
@@ -13,3 +15,11 @@
           idx 0
           level 0
           cnt 0]))
+
+(defn tokenize-line
+  "Split a line to tokens, where a token is a string of
+   - whitespaces (including comma and comments)
+   - a single opening or closing paren
+   - a string (which may contain any of the above)
+   - other atom as string"
+  [line])

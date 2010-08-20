@@ -16,10 +16,12 @@
 (deftest tokenize-line-test
   (are [line _ result]
     (is (= result (tokenize-line line)))
-    "(+ 2 3)" ["(","+"," ","2"," ","3",")"]
-    " ( +  2, ,3)" [" ","("," ","+","  ","2", ", ,","3",")"]
-    "42 ; answer" ["42"," ; answer"]
-    "42 \"answer\" life" ["42"," ","\"answer\""," ","life"]
-    "42 \"semi;colon\" life" ["42"," ","\"semi;colon\"", " ","life"]
-    "42 ; \"the\" answer" ["42", " ; \"the\" answer"]))
+    "(+ 2 3)"  :=>  ["(","+"," ","2"," ","3",")"]
+    " ( +  2, ,3)"  :=>  [" ","("," ","+","  ","2", ", ,","3",")"]
+    "\"only string\""  :=>  ["\"only string\""]
+    ";; only comment"  :=>  [";; only comment"]
+    "42 ; answer"  :=>  ["42"," ; answer"]
+    "42 \"answer\" life"  :=>  ["42"," ","\"answer\""," ","life"]
+    "42 \"semi;colon\" life"  :=>  ["42"," ","\"semi;colon\"", " ","life"]
+    "42 ; \"the\" answer"  :=>  ["42", " ; \"the\" answer"]))
 

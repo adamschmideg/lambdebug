@@ -6,8 +6,9 @@
       [utils :only [var-source-form resolve-tree]]]
     [clojure
       [stacktrace :only [root-cause]]]
+    [clojure.java
+      [io :only [append-spit]]]
     [clojure.contrib
-      [duck-streams :only [append-spit]]
       [find-namespaces :only [find-namespaces-on-classpath]]
       [ns-utils :only [ns-vars]]]))
 

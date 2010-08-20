@@ -1,7 +1,8 @@
 (ns
   lambdebug.colorizer
   (:require
-    [clojure.contrib str-utils :as s]))
+    [clojure
+      [string :as s]]))
 
 (defn substring-indexes-in-form
   "Interpret s as a form and return 

@@ -2,8 +2,8 @@
        :author "Adam Schmideg"}
   lambdebug.debugger
   (:require
-    [clojure.contrib
-      [str-utils2 :as string]
+    [clojure
+      [string :as s]
       [pprint :as pp]])
   (:use
     [clojure
@@ -123,9 +123,9 @@
   "Pretty print a form and surround it with decorations"
   [form]
   (str *left-marker*
-    (string/chomp
+    (s/trim
       (with-out-str
-        (pp/with-pprint-dispatch pp/*code-dispatch*
+        (pp/with-pprint-dispatch pp/code-dispatch
           (pp/pprint form))))
     *right-marker*))
 
@@ -138,7 +138,7 @@
         form (edit-path func-form (trace :path) decorate)]
       (println "Function:" (or (trace :function) "Given at REPL"))
       (print "Form: ")
-      (pp/with-pprint-dispatch pp/*code-dispatch*
+      (pp/with-pprint-dispatch pp/code-dispatch
         (pp/pprint form))
       (when-let [result (trace :result)]
         (print "Result: ")

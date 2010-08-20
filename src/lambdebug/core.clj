@@ -2,15 +2,16 @@
        :author "Adam Schmideg"}
   lambdebug.core
   (:require
-    [clojure.contrib
-      [str-utils2 :as s]])
+    [clojure
+      [string :as s]])
   (:use 
-    [clojure.test]
-    [clojure.contrib.pprint]
-    [clojure.contrib.repl-utils]
-    [clojure.contrib.duck-streams]
+    [clojure
+      test pprint repl]
+    [clojure.java
+      io]
     [clojure.contrib
-      [seq-utils :only [indexed]]]
+      [seq-utils :only [indexed]]
+      [string :only [substring?]]]
     [lambdebug
       utils])
   (:import [java.util.Date]))
@@ -147,7 +148,7 @@
     (let [name (str sym)]
       (or
         (= \. (get name 0))
-        (s/contains? name "/")))))
+        (substring? "/" name)))))
 
 (defn new?
   [sym]

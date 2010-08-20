@@ -1,9 +1,10 @@
 (ns
   lambdebug.core-test
   (:use
-    [clojure.test]
+    [clojure
+      test]
     [clojure.contrib
-      [seq-utils :only (flatten indexed)]]
+      [seq-utils :only [indexed]]]
     [lambdebug core utils]))
 
 ;; helpers for testing trace-related stuff

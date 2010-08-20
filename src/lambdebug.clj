@@ -4,18 +4,10 @@
        :author "Adam Schmideg"}
   lambdebug
   (:require
-    [clojure.contrib
-      [str-utils2 :as s]]
     [lambdebug
       [debugger :as dbg]])
   (:use 
-    [clojure.test]
-    [clojure.contrib.pprint]
-    [clojure.contrib.repl-utils]
-    [clojure.contrib.duck-streams]
-    [clojure.contrib [seq-utils :only (indexed)]]
-    [lambdebug core utils])
-  (:import [java.util.Date]))
+    [lambdebug core utils]))
 
 (defn debug
   [form]

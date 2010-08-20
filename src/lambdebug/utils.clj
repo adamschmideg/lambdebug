@@ -1,14 +1,12 @@
 (ns lambdebug.utils
   (:require
     [clojure
-      [set :as set]]
-    [clojure.contrib.str-utils2 :as s])
+      [set :as set]
+      [string :as s]])
   (:use
-    [clojure test
-      [walk :only [prewalk]]]
-    [clojure.contrib
-      [repl-utils :only [get-source]]
-      [seq-utils :only [flatten]]])
+    [clojure 
+      test
+      [walk :only [prewalk]]])
   (:import (java.io LineNumberReader InputStreamReader PushbackReader)
            (clojure.lang RT)))
 

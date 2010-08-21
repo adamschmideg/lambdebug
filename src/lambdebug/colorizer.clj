@@ -59,3 +59,31 @@
                 (concat start [sep+after :cont])))
             (concat start [sep+after])))
         (tokenize-simple-line line))))
+
+(defn tokenize
+  "Tokenize a string line by line, then concatenate tokens,
+  merging multiline strings"
+  [string]
+  (next
+    (let [lines (s/split-lines string)]
+      (loop [line (first lines)
+             rest (next lines)
+             cont? false
+             result []]
+        (let [tokens (tokenize-line line cont?)
+              result
+                (if (= :cont (last result))
+                  (let [[good [start-string _]]
+                        (split-at (- (count result) 2) result)]
+                    (concat
+                      good
+                      [(str start-string "\n" (first tokens))]
+                      (next tokens)))
+                  (concat result ["\n"] tokens))]
+          (if rest
+            (recur
+              (first rest)
+              (next rest)
+              (= :cont (last tokens))
+              result)
+            result))))))

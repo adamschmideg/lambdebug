@@ -34,5 +34,11 @@
       ["middle of string", :cont]))
     (is (=
       (tokenize-line "end string\" after" true)
-      ["end string\"", " ", "after"]))))
-
+      ["end string\"", " ", "after"])))
+  (testing "Tokenize text"
+    (is (=
+      (tokenize "a\nb\n\nc")
+      ["a", "\n", "b", "\n", "\n", "c"]))
+    (is (=
+      (tokenize "before \"begin\ncontinue\nend\" after")
+      ["before", " ", "\"begin\ncontinue\nend\"", " ", "after"]))))

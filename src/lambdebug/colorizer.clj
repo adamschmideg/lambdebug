@@ -88,19 +88,17 @@
          level 0
          count 0
          index 0]
-      (if (and (= count n)
-               (= level 0)
-               (not (whitespace? token)))
+    (cond
+      (and (= count n) (= level 0) (not (whitespace? token)))
         index
-        (if (seq rest)
-          (let [_ (?? token level count index)
-                level (cond
-                        (open-block? token) (inc level)
-                        (close-block? token) (dec level)
-                        :default level)
-                count (if (and (= level 0) (not (whitespace? token)))
-                        (inc count)
-                        count)
-                _ (?? ">>" level count)]
-            (recur (first rest) (next rest) level count (inc index)))
-          nil))))
+      (seq rest)
+        (let [level (cond
+                      (open-block? token) (inc level)
+                      (close-block? token) (dec level)
+                      :default level)
+              count (if (and (= level 0) (not (whitespace? token)))
+                      (inc count)
+                      count)]
+          (recur (first rest) (next rest) level count (inc index)))
+      :default
+        nil)))

@@ -13,6 +13,7 @@
     "a ( b ) c" [1 0] :=> 4 5))
 )
 
+(comment
 (deftest tokenize-test
   (testing "Tokenize line"
     (are [line _ result]
@@ -42,3 +43,16 @@
     (is (=
       (tokenize "before \"begin\ncontinue\nend\" after")
       ["before", " ", "\"begin\ncontinue\nend\"", " ", "after"]))))
+)
+
+(deftest indexing-test
+  (testing "Nth block of tokens"
+    (are [n tokens _ block-start]
+      (is (= block-start (nth-block-start tokens n)))
+      0 ["a", "b"] :=> 0
+      1 ["a", "b"] :=> 1
+      2 ["a", "b"] :=> nil
+      1 [" ", "a", " ", "b", " "] :=> 3
+      2 [" ", "a", " ", "b", " "] :=> nil
+      1 ["(" "a" "(" "A" ")" ")", "(" "b" ")"] := 6
+      2 ["(" "a" "(" "A" ")" ")", "(" "b" ")"] := nil)))

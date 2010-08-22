@@ -8,19 +8,6 @@
   (:use
     [lambdebug utils]))
 
-(defn substring-indexes-in-form
-  "Interpret s as a form and return 
-   the start and end index of the substring that would be
-   found at loc in that form. It takes into account clojure nuances,
-   such as whitespaces, comments, etc."
-   [s loc]
-   (loop [cur (first s)
-          xs (next s)
-          state nil
-          idx 0
-          level 0
-          cnt 0]))
-
 (defn tokenize-simple-line
   "Split a line to tokens, assuming it doesn't contain
   strings and comments"
@@ -87,3 +74,33 @@
               (= :cont (last tokens))
               result)
             result))))))
+
+(defn open-block? [s] (#{"[", "(", "{", "#{"} s))
+(defn close-block? [s] (#{"]", ")", "}"} s))
+(defn whitespace? [s] (#{\space \, \; \newline} (first s)))
+
+(defn nth-block-start
+  "Where return the index of tokens where the nth block of tokens
+  starts"
+  [tokens n]
+  (loop [token (first tokens)
+         rest (next tokens)
+         level 0
+         count 0
+         index 0]
+      (if (and (= count n)
+               (= level 0)
+               (not (whitespace? token)))
+        index
+        (if (seq rest)
+          (let [_ (?? token level count index)
+                level (cond
+                        (open-block? token) (inc level)
+                        (close-block? token) (dec level)
+                        :default level)
+                count (if (and (= level 0) (not (whitespace? token)))
+                        (inc count)
+                        count)
+                _ (?? ">>" level count)]
+            (recur (first rest) (next rest) level count (inc index)))
+          nil))))

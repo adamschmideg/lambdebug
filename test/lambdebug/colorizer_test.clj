@@ -46,11 +46,11 @@
 (deftest indexing-test
   (testing "Nth block of tokens"
     (are [n tokens _ block-start]
-      (is (= block-start (nth-block-start tokens n)))
-      0 ["a", "b"] :=> 0
-      1 ["a", "b"] :=> 1
-      2 ["a", "b"] :=> nil
-      1 [" ", "a", " ", "b", " "] :=> 3
-      2 [" ", "a", " ", "b", " "] :=> nil
-      1 ["(" "a" "(" "A" ")" ")", "(" "b" ")"] := 6
-      2 ["(" "a" "(" "A" ")" ")", "(" "b" ")"] := nil)))
+      (is (= block-start (count (first (split-at-block n tokens)))))
+       0 ["a", "b"] :=> 0
+       1 ["a", "b"] :=> 1
+      99 ["a", "b"] :=> 2
+       1 [" ", "a", " ", "b", " "] :=> 3
+      99 [" ", "a", " ", "b", " "] :=> 5
+       1 ["(" "a" "(" "A" ")" ")", "(" "b" ")"] := 6
+      99 ["(" "a" "(" "A" ")" ")", "(" "b" ")"] := 9)))

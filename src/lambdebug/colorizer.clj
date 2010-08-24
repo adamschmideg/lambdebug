@@ -79,26 +79,25 @@
 (defn close-block? [s] (#{"]", ")", "}"} s))
 (defn whitespace? [s] (#{\space \, \; \newline} (first s)))
 
-(defn nth-block-start
-  "Where return the index of tokens where the nth block of tokens
-  starts"
-  [tokens n]
-  (loop [token (first tokens)
-         rest (next tokens)
+(defn split-at-block
+  "Return tokens before nth block and after nth block"
+  [n tokens]
+  (loop [before []
+         rest tokens
          level 0
-         count 0
-         index 0]
-    (cond
-      (and (= count n) (= level 0) (not (whitespace? token)))
-        index
-      (seq rest)
-        (let [level (cond
-                      (open-block? token) (inc level)
-                      (close-block? token) (dec level)
-                      :default level)
-              count (if (and (= level 0) (not (whitespace? token)))
-                      (inc count)
-                      count)]
-          (recur (first rest) (next rest) level count (inc index)))
-      :default
-        nil)))
+         count 0]
+    (let [token (first rest)]
+      (cond
+        (and (= count n) (= level 0) (not (whitespace? token)))
+          [before rest]
+        (seq rest)
+          (let [level (cond
+                        (open-block? token) (inc level)
+                        (close-block? token) (dec level)
+                        :default level)
+                count (if (and (= level 0) (not (whitespace? token)))
+                        (inc count)
+                        count)]
+            (recur (conj before token) (next rest) level count))
+        :else
+          [before []]))))

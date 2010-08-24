@@ -101,3 +101,26 @@
             (recur (conj before token) (next rest) level count))
         :else
           [before []]))))
+
+(defn get-in-block
+  "Return [before found after] where found is the part denoted by path"
+  [tokens path]
+    (let [[before rest]
+            (loop [index (first path)
+                   more-indexes (next path)
+                   before []
+                   rest tokens]
+              ;(?? index more-indexes before rest)
+              (if index
+                (let [[left right] (split-at-block index rest)
+                      head (first right)
+                      left (if (open-block? head) (conj left head) left)
+                      right (if (open-block? head) (next right) right)]
+                  (recur
+                    (first more-indexes)
+                    (next more-indexes)
+                    (concat before left)
+                    right))
+                [before rest]))
+          [found after] (split-at-block 1 rest)]
+      [before found after]))

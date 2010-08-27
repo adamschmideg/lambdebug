@@ -102,25 +102,43 @@
         :else
           [before []]))))
 
+(defn token-rtrim
+  "Return [good-tokens whitespaces-after]"
+  [tokens]
+    (let [[rev-ws rev-good] (split-with whitespace? (reverse tokens))]
+      [(reverse rev-good) (reverse rev-ws)]))
+
+(defn token-trim
+  "Trim whitespaces and outermost parens from both ends"
+  [tokens]
+    (let [[left rest] (split-with whitespace? tokens)
+          [good right] (token-rtrim rest)]
+      [left good right]))
+
 (defn get-in-block
   "Return [before found after] where found is the part denoted by path"
   [tokens path]
-    (let [[before rest]
-            (loop [index (first path)
-                   more-indexes (next path)
-                   before []
-                   rest tokens]
-              ;(?? index more-indexes before rest)
-              (if index
-                (let [[left right] (split-at-block index rest)
-                      head (first right)
-                      left (if (open-block? head) (conj left head) left)
-                      right (if (open-block? head) (next right) right)]
-                  (recur
-                    (first more-indexes)
-                    (next more-indexes)
-                    (concat before left)
-                    right))
-                [before rest]))
-          [found after] (split-at-block 1 rest)]
-      [before found after]))
+  (let [
+    [before middle after]
+      (loop [path path
+             before []
+             found tokens
+             after []]
+        (let [n (first path)]
+          (if n
+            (let [token (first found)]
+              (cond
+                (whitespace? token)
+                  (recur path (conj before token) (next found) after)
+                (open-block? token)
+                  (let [[till-open-block focus from-close-block] (token-trim found)
+                        [skip start-found] (split-at-block n (next (butlast focus)))
+                        [found after-found] (split-at-block 1 start-found)
+                        before (concat before till-open-block (first focus) skip)
+                        after (concat after-found (last focus) from-close-block after)]
+                    (recur (next path) before found after))
+                :else
+                  [before found after]))
+              [before found after])))
+      [found ws] (token-rtrim middle)]
+      [before found (concat ws after)]))

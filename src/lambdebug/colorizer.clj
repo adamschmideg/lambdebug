@@ -142,3 +142,16 @@
               [before found after])))
       [found ws] (token-rtrim middle)]
       [before found (concat ws after)]))
+
+(defn insert-subseqs
+  "Insert each items at nth position into coll,
+  indexed-new-items is ((n items) ...)"
+  [coll indexed-new-items]
+    (loop [coll coll
+           indexed-items (sort (complement compare) indexed-new-items)]
+      (?? coll indexed-items)
+      (let [[[n item] & more] indexed-items]
+        (if n
+          (let [[before after] (split-at n coll)]
+            (recur (concat before item after) more))
+          coll))))

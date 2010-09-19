@@ -3,5 +3,4 @@
   :url "git://github.com/adamschmideg/lambdebug.git"
   :dependencies [[org.clojure/clojure "1.2.0"]
                  [org.clojure/clojure-contrib "1.2.0"]]
-  :dev-dependencies [[lein-clojars "0.5.0"]]
-  :repositories [["clojars" "http://clojars.org/repo"]])
+  :dev-dependencies [[lein-clojars "0.5.0"]])

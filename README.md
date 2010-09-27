@@ -8,4 +8,4 @@ And you are ready to go
     > (use 'lambdebug)
     > (debug '(+ 42 69))
 
-For more details, visits the [lambdebug site](http://lambdebug.github.com).
+For more details, visit the [lambdebug site](http://lambdebug.github.com).

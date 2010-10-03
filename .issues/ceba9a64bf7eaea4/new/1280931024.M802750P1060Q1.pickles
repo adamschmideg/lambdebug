@@ -1,9 +1,0 @@
-From: Adam Schmideg
-Date: Wed, 04 Aug 2010 16:08:09 +0200
-State: new
-Subject: CompilerException: IllegalArgumentException: Don't know how to create ISeq from: clojure.lang.Symbol
-Message-Id: <ceba9a64bf7eaea4-0-artemis@pickles>
-
-Testing
-(use 'clojure.contrib.greatest-least)
-(nice-steps '(greatest 1 2))

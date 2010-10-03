@@ -1,0 +1,5 @@
+CompilerException: Exception: Unable to resolve symbol: with-pretty-writer                           | owner:, open:True, id:03118d3ac80d93aac170433c1ab5b2a8ef85c423, time:1286064870.19
+Trace loop-recur                                                                                     | owner:, open:True, id:0494a62db916a0de9096e2fd3233f3cff884867d, time:1286064877.9
+pprint/write-out CompilerException: IllegalArgumentException: Invalid assignment target              | owner:, open:True, id:426f53e83149ea89cedbd8b0090c649f84d4b7c4, time:1286064888.79
+CompilerException: IllegalArgumentException: Don't know how to create ISeq from: clojure.lang.Symbol | owner:, open:True, id:87a08005ed963d40c6ef53476646b0ceae4abb55, time:1286064851.99
+(let [x ...]) in REPL doesn't work                                                                   | owner:, open:True, id:e1e000b8d843f0e29a7131fcd86e6a31b6e32f9f, time:1286064955.02

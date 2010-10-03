@@ -1,9 +1,0 @@
-From: Adam Schmideg
-Date: Wed, 04 Aug 2010 16:12:14 +0200
-State: new
-Subject: pprint/write-out CompilerException: IllegalArgumentException: Invalid assignment target
-Message-Id: <b7f17327a29e7b29-0-artemis@pickles>
-
-Testing
-(use 'clojure.contrib.pprint)
-(nice-steps '(pprint [2]))
